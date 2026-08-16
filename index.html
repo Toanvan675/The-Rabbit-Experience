@@ -1050,7 +1050,7 @@
                     if (type === 'door') {
                         if (!isDaytime && hasEnteredHouse) {
                             playSound('door_close'); 
-                            showSubtitle("The door is locked! I can't get out.", 3000);
+                            showSubtitle("I locked the door, no need to get out at night!.", 3000);
                             return;
                         }
 
@@ -1092,7 +1092,7 @@
                     }
                     else if (type === 'tv') {
                         playSound('click'); 
-                        showSubtitle("I don't wanna touch it rightnow", 3000);
+                        showSubtitle("I don't wanna use the tv rightnow", 3000);
                     }
                 }
             }
@@ -1113,7 +1113,7 @@
 
             setTimeout(() => {
                 document.body.classList.remove('shaking'); rabbitGroup.position.y = -10; rabbitLight.intensity = 0; 
-                isFrozen = false; showSubtitle("oh fuck, just a rabbit, that thing scared me!", 4000);
+                isFrozen = false; showSubtitle("oh, just a stupid rabbit, really creeped me out!", 4000);
             }, 3000);
         }
 
