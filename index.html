@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The rabbit - Horror Pixel Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            image-rendering: pixelated; 
+            image-rendering: crisp-edges; 
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+        }
+
+        #crt-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0.6;
+        }
+
+        #rabbit-hand-overlay {
+            position: absolute;
+            top: 62%;
+            left: 84%;
+            transform: translate(-35%, -45%);
+            width: 48vw;
+            max-width: 550px;
+            height: auto;
+            z-index: 25;
+            pointer-events: none;
+            transition: opacity 0.6s ease-in-out;
+            opacity: 0;
+        }
+        #rabbit-hand-overlay.visible {
+            opacity: 1 !important;
+        }
+        #rabbit-hand-overlay img {
+            width: 100%;
+            height: auto;
+            display: block;
+            mix-blend-mode: screen;
+            filter: drop-shadow(-5px -5px 15px rgba(0,0,0,0.8));
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+            color: #fff;
+            text-align: center;
+        }
+        
+        .menu-bg {
+            background-color: rgba(0, 0, 0, 0.85); 
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes flicker {
+            0% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            5% { opacity: 0.2; text-shadow: none; }
+            10% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            15% { opacity: 0.1; }
+            25% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            80% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            82% { opacity: 0.5; }
+            84% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            100% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+        }
+        
+        @keyframes fast-flicker {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        @keyframes blink-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+        .blinking { animation: blink-slow 1.2s infinite; }
+
+        h1 {
+            font-size: 4rem;
+            color: #cc0000;
+            margin-bottom: 50px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: flicker 4s infinite;
+        }
+
+        button {
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #fff;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover { background-color: #fff; color: #000; }
+
+        #main-menu button {
+            color: #cc0000;
+            border-color: #cc0000;
+            background: rgba(20, 0, 0, 0.6);
+        }
+        #main-menu button:hover {
+            background-color: #cc0000;
+            color: #000;
+        }
+
+        .menu-btns-vertical { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            align-items: center;
+        }
+        
+        .menu-btns-vertical button {
+            font-size: 1.5rem;
+            padding: 15px 40px;
+            width: 250px;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(204, 0, 0, 0.2);
+        }
+
+        #btn-play {
+            font-size: 2.5rem !important;
+            padding: 15px 60px !important;
+            margin-bottom: 15px;
+            width: 300px !important;
+        }
+
+        .menu-btns button {
+            font-size: 1.2rem;
+            padding: 12px 20px;
+            width: 180px; 
+            margin: 10px;
+        }
+
+        .peeking-rabbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            opacity: 0.15;
+            animation: peek-anim 8s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes peek-anim {
+            0%, 100% { opacity: 0.05; transform: translate(-50%, -50%) scale(0.9); }
+            50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .rabbit-eye {
+            animation: eye-glow 2s infinite alternate;
+        }
+
+        @keyframes eye-glow {
+            0% { fill: #8a0000; filter: drop-shadow(0 0 5px #500000); }
+            100% { fill: #ff0000; filter: drop-shadow(0 0 20px #ff0000); }
+        }
+
+        .info-panel {
+            background: rgba(10,10,10,0.95);
+            border: 1px solid #555;
+            padding: 40px;
+            width: 450px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,1);
+        }
+
+        #btn-ingame-menu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 2.5rem;
+            padding: 5px 15px;
+            z-index: 5;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        #btn-ingame-menu:hover {
+            background: rgba(200,0,0,0.8);
+            border-color: #f00;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+        
+        .setting-row input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 6px; height: 6px;
+            background-color: rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            border-radius: 50%;
+            transition: all 0.2s ease-in-out;
+            pointer-events: none;
+        }
+
+        #crosshair.glow {
+            width: 8px; height: 8px;
+            background-color: #ff3333; 
+            box-shadow: 0 0 15px #ff0000, 0 0 5px #ff0000;
+        }
+
+        #flashlight-ui {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px; height: 70px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #888;
+            border-radius: 10px;
+            z-index: 5;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 35px;
+            transition: all 0.2s;
+        }
+        
+        #flashlight-ui.active {
+            background-color: rgba(255, 255, 200, 0.6);
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 200, 0.5);
+        }
+
+        #instructions {
+            position: absolute;
+            top: 20px; right: 20px;
+            color: rgba(255,255,255,0.6);
+            z-index: 5; font-size: 1rem;
+            pointer-events: none;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-right: 3px solid #fff;
+            text-align: right;
+            transition: opacity 2s ease-in-out;
+            opacity: 1;
+        }
+
+        #subtitle {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 6;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            max-width: 80%;
+            white-space: pre-wrap; 
+        }
+
+        #fade-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: black;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 3s ease-in-out, background-color 1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shaking { animation: shake 0.1s infinite; }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="crt-overlay"></div>
+    <div id="fade-overlay"><span id="end-text"></span></div>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <button id="btn-ingame-menu">⚙️</button>
+        <div id="crosshair"></div>
+        <div id="flashlight-ui">🔦</div>
+        <div id="subtitle"></div>
+        <div id="rabbit-hand-overlay">
+            <img src="Hand.jpg" onerror="this.onerror=null; this.src='https://placehold.co/400x300/111/f00?text=Hand.jpg+Missing';" alt="Holding Rabbit">
+        </div>
+        <div id="instructions">
+            [W,A,S,D] Di chuyển<br>
+            [Chuột trái] Tương tác<br>
+            [Phím 1] Bật/tắt đèn pin<br>
+            [ESC] Mở Menu
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="ui-layer">
+        <div class="menu-bg"></div>
+        <div class="peeking-rabbit">
+            <svg width="400" height="400" viewBox="0 0 100 100">
+                <polygon points="30,50 15,-10 40,5" fill="#050505" />
+                <polygon points="70,50 85,-10 60,5" fill="#050505" />
+                <ellipse cx="50" cy="65" rx="35" ry="30" fill="#050505" />
+                <circle cx="35" cy="55" r="3" fill="#ff0000" class="rabbit-eye"/>
+                <circle cx="65" cy="55" r="3" fill="#ff0000" class="rabbit-eye"/>
+                <path d="M 40 75 Q 50 85 60 75" stroke="#330000" stroke-width="2" fill="none"/>
+            </svg>
+        </div>
+        <h1 style="position: relative; z-index: 2;">The rabbit</h1>
+        <div class="menu-btns-vertical" style="position: relative; z-index: 2;">
+            <button id="btn-play">PLAY</button>
+            <button id="btn-credit">CREDITS</button>
+            <button id="btn-donate">DONATE</button>
+        </div>
+    </div>
+
+    <!-- Pause Menu (In-game) -->
+    <div id="pause-menu" class="ui-layer hidden" style="z-index: 15;">
+        <div class="menu-bg"></div>
+        <h2 style="font-size: 3rem; margin-bottom: 30px;">PAUSED</h2>
+        <div class="menu-btns" style="display:flex; flex-direction:column;">
+            <button id="btn-resume" style="border-color:#aaa;">CONTINUE [X]</button>
+            <button id="btn-settings">SETTINGS</button>
+            <button id="btn-quit-main">MAIN MENU</button>
+        </div>
+    </div>
+
+    <!-- Settings Menu -->
+    <div id="settings-menu" class="ui-layer hidden" style="z-index: 16;">
+        <div class="menu-bg"></div>
+        <div class="info-panel">
+            <h2>SETTINGS</h2>
+            <div class="setting-row">
+                <label>Volume:</label>
+                <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="1">
+            </div>
+            <div class="setting-row">
+                <label>FOV:</label>
+                <input type="range" id="fov-slider" min="50" max="100" step="5" value="65">
+            </div>
+        </div>
+        <button id="btn-settings-back" class="btn-back">QUAY LẠI</button>
+    </div>
+
+    <!-- Credit Menu -->
+    <div id="credit-menu" class="ui-layer hidden">
+        <div class="menu-bg"></div>
+        <div class="info-panel">
+            <h2>CREDITS</h2>
+            <p style="font-size: 1.2rem; color: #aaa;">Người tạo ra là Toàn đẹp trai</p>
+        </div>
+        <button class="btn-back">QUAY LẠI</button>
+    </div>
+
+    <!-- Donate Menu -->
+    <div id="donate-menu" class="ui-layer hidden">
+        <div class="menu-bg"></div>
+        <div class="info-panel">
+            <h2>DONATE</h2>
+            <p>[ SCAN TO SUPPORT ]</p>
+            <img src="image_cad759.jpg" onerror="this.onerror=null; this.src='https://placehold.co/300x400/111/f00?text=QR+Code+Missing';" alt="QR Donate" style="width: 300px; max-width: 100%; height: auto; margin: 0 auto; display: block; border: 4px solid #333; border-radius: 10px;">
+        </div>
+        <button class="btn-back">QUAY LẠI</button>
+    </div>
+
+    <script>
+        const uiElems = {
+            main: document.getElementById('main-menu'),
+            pause: document.getElementById('pause-menu'),
+            settings: document.getElementById('settings-menu'),
+            credit: document.getElementById('credit-menu'),
+            donate: document.getElementById('donate-menu'),
+            hud: document.getElementById('hud'),
+            subtitle: document.getElementById('subtitle'),
+            fade: document.getElementById('fade-overlay'),
+            endText: document.getElementById('end-text'),
+            ingameMenuBtn: document.getElementById('btn-ingame-menu'),
+            crosshair: document.getElementById('crosshair'),
+            rabbitHand: document.getElementById('rabbit-hand-overlay')
+        };
+        const flashlightBtn = document.getElementById('flashlight-ui');
+
+        // GAME STATE VARIABLES
+        let currentCycle = 1;
+        let morningTextTriggered = false;
+        let hasTurnedOnLight = false;
+        let isDaytime = false;
+        let hasScared = false;
+        let hasEnteredHouse = false;
+        let isFlashlightOn = false;
+        let flashlightDead = false;
+        
+        let finalCycleWalkTime = 0;
+        let finalCycleFlags = [false, false, false, false];
+        let isFinalJumpscare = false; 
+        let finalScareBasePos = new THREE.Vector3(); 
+        let isPaused = false;
+
+        function showRabbitHand() {
+            uiElems.rabbitHand.classList.add('visible');
+        }
+        function hideRabbitHand() {
+            uiElems.rabbitHand.classList.remove('visible');
+        }
+
+        // UI EVENT LISTENERS
+        document.getElementById('btn-credit').addEventListener('click', () => { uiElems.main.classList.add('hidden'); uiElems.credit.classList.remove('hidden'); });
+        document.getElementById('btn-donate').addEventListener('click', () => { uiElems.main.classList.add('hidden'); uiElems.donate.classList.remove('hidden'); });
+        
+        document.querySelectorAll('#credit-menu .btn-back, #donate-menu .btn-back').forEach(btn => btn.addEventListener('click', () => {
+            uiElems.credit.classList.add('hidden');
+            uiElems.donate.classList.add('hidden');
+            uiElems.main.classList.remove('hidden');
+        }));
+
+        uiElems.ingameMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.exitPointerLock();
+            uiElems.pause.classList.remove('hidden');
+            uiElems.ingameMenuBtn.classList.add('hidden');
+        });
+
+        document.getElementById('btn-resume').addEventListener('click', () => {
+            uiElems.pause.classList.add('hidden');
+            document.body.requestPointerLock();
+        });
+
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            uiElems.pause.classList.add('hidden');
+            uiElems.settings.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-settings-back').addEventListener('click', () => {
+            uiElems.settings.classList.add('hidden');
+            uiElems.pause.classList.add('hidden');
+        });
+
+        document.getElementById('btn-quit-main').addEventListener('click', () => {
+            location.reload(); 
+        });
+
+        const volSlider = document.getElementById('vol-slider');
+        const fovSlider = document.getElementById('fov-slider');
+        let masterVolume = 1.0;
+
+        // KHỞI TẠO HỆ THỐNG ÂM THANH MỚI TỪ THƯ MỤC "musics"
+        const sfx = {
+            path_steps: new Audio('musics/path_steps.mp3'),
+            house_steps: new Audio('musics/house_steps.mp3'),
+            flashlight_on: new Audio('musics/flashlight_on.mp3'),
+            flashlight_off: new Audio('musics/flashlight_off.mp3'),
+            door_open: new Audio('musics/door_open.mp3'),
+            door_close: new Audio('musics/door_close.mp3'),
+            ambient_bg: new Audio('musics/ambient_bg.mp3'),
+            jumpscare_1: new Audio('musics/jumpscare_1.mp3'),
+            jumpscare_final: new Audio('musics/jumpscare_final.mp3')
+        };
+        sfx.ambient_bg.loop = true;
+        sfx.jumpscare_final.loop = true;
+
+        volSlider.addEventListener('input', (e) => {
+            masterVolume = parseFloat(e.target.value);
+            if (masterGain) masterGain.gain.value = masterVolume;
+            
+            if (isAmbientPlaying && sfx.ambient_bg) {
+                const inHouseCurrent = (camera && camera.position.z < -37 && Math.abs(camera.position.x) < 8);
+                sfx.ambient_bg.volume = (inHouseCurrent && currentCycle !== 2) ? masterVolume * 0.1 : masterVolume;
+            }
+            if (sfx.jumpscare_final) sfx.jumpscare_final.volume = masterVolume;
+            if (sfx.path_steps) sfx.path_steps.volume = masterVolume;
+            if (sfx.house_steps) sfx.house_steps.volume = masterVolume;
+        });
+
+        let audioCtx;
+        let masterGain;
+        let noiseBuffer;
+        let isAmbientPlaying = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = masterVolume;
+                masterGain.connect(audioCtx.destination);
+
+                const bufferSize = audioCtx.sampleRate * 0.2; 
+                noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playContinuousJumpscare() {
+            if (sfx.jumpscare_final) {
+                sfx.jumpscare_final.volume = masterVolume;
+                sfx.jumpscare_final.currentTime = 0;
+                sfx.jumpscare_final.play().catch(e => console.log("Missing jumpscare_final.mp3"));
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+
+            // Xử lý chạy âm thanh từ file mp3 nếu khớp tên
+            if (sfx[type]) {
+                let sound = sfx[type];
+                // Clone các âm thanh có thể đè lên nhau (loại bỏ âm thanh di chuyển để quản lý riêng)
+                if (['door_open', 'door_close', 'flashlight_on', 'flashlight_off', 'jumpscare_1'].includes(type)) {
+                    sound = sound.cloneNode();
+                }
+                sound.volume = masterVolume;
+                sound.play().catch(e => console.log(`Missing or blocked audio: ${type}.mp3`));
+                return;
+            }
+
+            const t = audioCtx.currentTime;
+            
+            // Các âm thanh synth cũ được giữ lại làm backup trợ năng (UI click, sấm, máy chữ...)
+            if (type === 'ui_blip') {
+                const noiseSource = audioCtx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass'; filter.frequency.value = 400; 
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.5, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                noiseSource.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                noiseSource.start();
+            } 
+            else if (type === 'wood_step') {
+                const osc = audioCtx.createOscillator(); osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.1);
+            }
+            else if (type === 'click') {
+                const osc = audioCtx.createOscillator(); osc.type = 'square';
+                osc.frequency.setValueAtTime(800, t);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.05);
+            }
+            else if (type === 'door') {
+                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, t); osc.frequency.linearRampToValueAtTime(60, t + 0.4);
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 800;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.5, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.4);
+            }
+            else if (type === 'jumpscare') {
+                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(20, t + 1.5);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(); osc.stop(t + 1.5);
+            }
+            else if (type === 'thunder') {
+                const bufferSize = audioCtx.sampleRate * 3.0; 
+                const thunderBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = thunderBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                const noiseSource = audioCtx.createBufferSource(); noiseSource.buffer = thunderBuffer;
+                
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, t); filter.frequency.exponentialRampToValueAtTime(50, t + 3);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(1.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 3);
+                
+                noiseSource.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                noiseSource.start(t);
+            }
+            else if (type === 'typewriter') {
+                const osc = audioCtx.createOscillator(); osc.type = 'square';
+                osc.frequency.setValueAtTime(600 + Math.random() * 200, t); 
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.015, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.04);
+            }
+        }
+
+        function startAmbientSound() {
+            if (!audioCtx || isAmbientPlaying) return;
+            isAmbientPlaying = true;
+            if (sfx.ambient_bg) {
+                sfx.ambient_bg.volume = masterVolume;
+                sfx.ambient_bg.play().catch(e => console.log("Missing ambient_bg.mp3"));
+            }
+        }
+
+        const container = document.getElementById('game-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000); 
+        scene.fog = new THREE.FogExp2(0x000000, 0.08); 
+
+        fovSlider.addEventListener('input', (e) => {
+            if (camera) {
+                camera.fov = parseInt(e.target.value);
+                camera.updateProjectionMatrix();
+            }
+        });
+
+        const camera = new THREE.PerspectiveCamera(parseInt(fovSlider.value), window.innerWidth / window.innerHeight, 0.1, 2000); 
+        camera.position.set(0, 2, 45); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        const pixelRatio = 0.15; 
+        renderer.setSize(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio, false);
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0x000000); 
+        scene.add(ambientLight);
+        
+        let sunLight;
+
+        const flashlight = new THREE.SpotLight(0xfffaee, 0); 
+        flashlight.position.set(0, 0, 0);
+        flashlight.target.position.set(0, 0, -1);
+        flashlight.angle = Math.PI / 7; 
+        flashlight.penumbra = 0.1; 
+        flashlight.distance = 50; 
+        flashlight.decay = 1.5; 
+        camera.add(flashlight);
+        camera.add(flashlight.target);
+        scene.add(camera);
+
+        function toggleFlashlight() {
+            if (flashlightDead) {
+                showSubtitle("damn it, the light is dead", 3000);
+                return;
+            }
+            isFlashlightOn = !isFlashlightOn;
+            playSound(isFlashlightOn ? 'flashlight_on' : 'flashlight_off');
+            
+            flashlight.intensity = isFlashlightOn ? 15 : 0; 
+            flashlightBtn.classList.toggle('active', isFlashlightOn);
+            
+            if (isFlashlightOn) {
+                pathMat.emissive.setHex(0x2a1a10); 
+                pathMat.color.setHex(0x5c4033);
+            } else {
+                pathMat.emissive.setHex(0x000000);
+                pathMat.color.setHex(0x1f140d);
+            }
+        }
+
+        flashlightBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (controlsEnabled) toggleFlashlight();
+        });
+
+        function createWoodTexture(baseColor, stripeColor) {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = baseColor; ctx.fillRect(0, 0, 256, 256);
+            for(let i = 0; i < 200; i++) {
+                ctx.fillStyle = stripeColor; ctx.globalAlpha = Math.random() * 0.15;
+                ctx.fillRect(0, Math.random() * 256, 256, Math.random() * 4 + 1);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+            return tex;
+        }
+
+        const woodWallTex = createWoodTexture('#3a2415', '#000000');
+        const woodFloorTex = createWoodTexture('#2a180c', '#000000');
+        const woodRoofTex = createWoodTexture('#1c1006', '#000000');
+
+        const floorGeo = new THREE.PlaneGeometry(300, 3500); 
+        const floorMat = new THREE.MeshLambertMaterial({ color: 0x050a05 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(0, 0, -300);
+        scene.add(floor);
+
+        const pathGeo = new THREE.PlaneGeometry(5, 3500); 
+        const pathMat = new THREE.MeshLambertMaterial({ color: 0x1f140d });
+        const path = new THREE.Mesh(pathGeo, pathMat);
+        path.rotation.x = -Math.PI / 2;
+        path.position.set(0, 0.02, -300); 
+        scene.add(path);
+
+        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x120c08 });
+        const leavesMat = new THREE.MeshLambertMaterial({ color: 0x0a140a });
+        
+        const treeCount = 4000;
+        const validTrees = [];
+        for (let i = 0; i < treeCount; i++) {
+            const x = (Math.random() - 0.5) * 180;
+            const z = (Math.random() * 3200) - 1700; 
+            if (Math.abs(x) < 5.5 && z < 100 && z > -1050) continue; 
+            if (Math.abs(x) < 12 && z < -35 && z > -55) continue; 
+            const h = 5 + Math.random() * 7;
+            validTrees.push({ x, z, h });
+        }
+
+        const trunkGeo = new THREE.BoxGeometry(1.2, 1, 1.2);
+        const leavesGeo = new THREE.BoxGeometry(4.5, 5.5, 4.5);
+        const trunkInstancedMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, validTrees.length);
+        const leavesInstancedMesh = new THREE.InstancedMesh(leavesGeo, leavesMat, validTrees.length);
+
+        const dummy = new THREE.Object3D();
+        for (let i = 0; i < validTrees.length; i++) {
+            const t = validTrees[i];
+            
+            dummy.position.set(t.x, t.h / 2, t.z);
+            dummy.scale.set(1, t.h, 1);
+            dummy.updateMatrix();
+            trunkInstancedMesh.setMatrixAt(i, dummy.matrix);
+
+            dummy.position.set(t.x, t.h + 1, t.z);
+            dummy.scale.set(1, 1, 1);
+            dummy.updateMatrix();
+            leavesInstancedMesh.setMatrixAt(i, dummy.matrix);
+        }
+        trunkInstancedMesh.instanceMatrix.needsUpdate = true;
+        leavesInstancedMesh.instanceMatrix.needsUpdate = true;
+        scene.add(trunkInstancedMesh);
+        scene.add(leavesInstancedMesh);
+
+        const houseGroup = new THREE.Group();
+        houseGroup.position.set(0, 0, -45);
+        scene.add(houseGroup);
+
+        const interactables = []; 
+
+        const houseLight = new THREE.PointLight(0xffddaa, 0, 20);
+        houseLight.position.set(0, 5, 0);
+        houseGroup.add(houseLight);
+
+        const matWall = new THREE.MeshLambertMaterial({ map: woodWallTex });
+        const w_W = 16, w_H = 8, w_D = 16;
+        
+        const lw = new THREE.Mesh(new THREE.BoxGeometry(1, w_H, w_D), matWall); lw.position.set(-8, 4, 0); houseGroup.add(lw);
+        const rw = new THREE.Mesh(new THREE.BoxGeometry(1, w_H, w_D), matWall); rw.position.set(8, 4, 0); houseGroup.add(rw);
+        const bw = new THREE.Mesh(new THREE.BoxGeometry(w_W, w_H, 1), matWall); bw.position.set(0, 4, -8); houseGroup.add(bw);
+        const fwLeft = new THREE.Mesh(new THREE.BoxGeometry(6, w_H, 1), matWall); fwLeft.position.set(-5, 4, 8); houseGroup.add(fwLeft);
+        const fwRight = new THREE.Mesh(new THREE.BoxGeometry(6, w_H, 1), matWall); fwRight.position.set(5, 4, 8); houseGroup.add(fwRight);
+        const fwTop = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 1), matWall); fwTop.position.set(0, 7, 8); houseGroup.add(fwTop);
+
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(18, 1, 18), new THREE.MeshLambertMaterial({map: woodRoofTex}));
+        roof.position.set(0, w_H + 0.5, 0); houseGroup.add(roof);
+        const woodFloor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshLambertMaterial({map: woodFloorTex}));
+        woodFloor.rotation.x = -Math.PI / 2; woodFloor.position.set(0, 0.05, 0); houseGroup.add(woodFloor);
+
+        const doorPivot = new THREE.Group(); doorPivot.position.set(-2, 0, 8); houseGroup.add(doorPivot);
+        const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.4), new THREE.MeshLambertMaterial({color: 0x4a2a10}));
+        doorMesh.position.set(2, 3, 0); doorMesh.userData = { type: 'door', isOpen: false }; doorPivot.add(doorMesh); interactables.push(doorMesh);
+
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.2, 7), new THREE.MeshLambertMaterial({color: 0x442222}));
+        bed.position.set(-5, 0.6, -4); bed.userData = { type: 'bed' }; houseGroup.add(bed); interactables.push(bed);
+
+        const table = new THREE.Mesh(new THREE.BoxGeometry(5, 2.5, 2.5), new THREE.MeshLambertMaterial({color: 0x3e2723}));
+        table.position.set(4, 1.25, -6); houseGroup.add(table);
+        
+        const tv = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 0.5), new THREE.MeshLambertMaterial({color: 0x050505}));
+        tv.position.set(4, 3.5, -6); tv.userData = { type: 'tv' }; houseGroup.add(tv); interactables.push(tv);
+
+        const switchMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa, emissive: 0x0055ff, emissiveIntensity: 1 });
+        const switchBtn = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.1), switchMat);
+        switchBtn.position.set(2.5, 4, 7.4); switchBtn.userData = { type: 'switch', isOn: false };
+        houseGroup.add(switchBtn); interactables.push(switchBtn);
+
+        const rabbitGroup = new THREE.Group();
+        const rMat = new THREE.MeshLambertMaterial({ color: 0xcccccc }); 
+        const rBody = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), rMat); rBody.position.y = 0.5; rabbitGroup.add(rBody);
+        const rHead = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), rMat); rHead.position.set(0, 1.2, 0.8); rabbitGroup.add(rHead);
+        const ear1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear1.position.set(-0.2, 1.8, 0.8); rabbitGroup.add(ear1);
+        const ear2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear2.position.set(0.2, 1.8, 0.8); rabbitGroup.add(ear2);
+        
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye1.position.set(-0.2, 1.3, 1.25); rabbitGroup.add(eye1);
+        const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye2.position.set(0.2, 1.3, 1.25); rabbitGroup.add(eye2);
+
+        const noseMat = new THREE.MeshBasicMaterial({ color: 0xffaacc });
+        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.1), noseMat); nose.position.set(0, 1.1, 1.25); rabbitGroup.add(nose);
+        const mouthMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), mouthMat); mouth.position.set(0, 0.95, 1.25); rabbitGroup.add(mouth);
+
+        const rabbitLight = new THREE.PointLight(0xffffff, 0, 10);
+        rabbitLight.position.set(0, 1.2, 2.5); 
+        rabbitGroup.add(rabbitLight);
+
+        rabbitGroup.position.set(0, -10, 0); 
+        rabbitGroup.scale.set(0.6, 0.6, 0.6); 
+        scene.add(rabbitGroup);
+
+        let controlsEnabled = false;
+        let isFrozen = false; 
+        const moveSpeed = 6;
+        
+        let keys = { w: false, a: false, s: false, d: false };
+        let pitch = 0; let yaw = 0;
+
+        document.getElementById('btn-play').addEventListener('click', () => {
+            initAudio();
+            playSound('thunder'); 
+            startAmbientSound(); 
+
+            uiElems.main.classList.add('hidden');
+            uiElems.hud.classList.remove('hidden');
+            document.body.requestPointerLock();
+            
+            showRabbitHand();
+
+            setTimeout(() => {
+                const instructionsPanel = document.getElementById('instructions');
+                if (instructionsPanel) instructionsPanel.style.opacity = '0';
+            }, 10000);
+
+            setTimeout(async () => {
+                await showSubtitle("such a hard day of work, I should go home", 3000);
+                showSubtitle("my home is at the end of this path", 3000);
+            }, 1000);
+        });
+
+        let typingInterval;
+        let hideTimeout;
+        const TYPE_SPEED = 40; 
+
+        function showSubtitle(text, duration = 3000) {
+            return new Promise((resolve) => {
+                clearInterval(typingInterval);
+                clearTimeout(hideTimeout);
+                
+                uiElems.subtitle.textContent = ""; 
+                uiElems.subtitle.style.opacity = 1;
+                
+                let i = 0;
+                typingInterval = setInterval(() => {
+                    if (i < text.length) {
+                        uiElems.subtitle.textContent += text.charAt(i);
+                        if (text.charAt(i) !== ' ' && text.charAt(i) !== '\u00A0') playSound('typewriter');
+                        i++;
+                    } else {
+                        clearInterval(typingInterval);
+                        if (duration > 0) {
+                            hideTimeout = setTimeout(() => {
+                                hideSubtitle();
+                                resolve();
+                            }, duration);
+                        } else {
+                            resolve();
+                        }
+                    }
+                }, TYPE_SPEED);
+            });
+        }
+        function hideSubtitle() { uiElems.subtitle.style.opacity = 0; }
+
+        document.addEventListener('pointerlockchange', () => {
+            controlsEnabled = (document.pointerLockElement === document.body);
+            if (!controlsEnabled && uiElems.main.classList.contains('hidden') && uiElems.settings.classList.contains('hidden') && uiElems.fade.style.pointerEvents !== 'auto' && !isFinalJumpscare) {
+                uiElems.pause.classList.remove('hidden');
+                uiElems.ingameMenuBtn.classList.add('hidden');
+                isPaused = true;
+                if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                if (isAmbientPlaying) sfx.ambient_bg.pause();
+                if (isFinalJumpscare) sfx.jumpscare_final.pause();
+            } else if (controlsEnabled) {
+                uiElems.pause.classList.add('hidden');
+                uiElems.settings.classList.add('hidden');
+                uiElems.ingameMenuBtn.classList.remove('hidden');
+                isPaused = false;
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                if (isAmbientPlaying) sfx.ambient_bg.play().catch(()=>{});
+                if (isFinalJumpscare) sfx.jumpscare_final.play().catch(()=>{});
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!controlsEnabled || isFrozen) return;
+            yaw -= (e.movementX || 0) * 0.002; pitch -= (e.movementY || 0) * 0.002;
+            pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
+            if(e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
+            if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
+            if(e.code === 'Digit1' && controlsEnabled && !isFrozen) toggleFlashlight();
+        });
+        document.addEventListener('keyup', (e) => {
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
+            if(e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
+            if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
+        });
+
+        function triggerWakeUp() {
+            uiElems.endText.classList.remove('blinking');
+            uiElems.endText.textContent = "";
+            hideSubtitle(); 
+            
+            scene.background.setHex(0x87CEEB); 
+            scene.fog.color.setHex(0x87CEEB);
+            scene.fog.density = 0.025; 
+            
+            if (!sunLight) {
+                sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                sunLight.position.set(10, 20, 10);
+                scene.add(sunLight);
+            }
+            sunLight.intensity = 1.2;
+            ambientLight.intensity = 0.5;
+            
+            flashlightDead = false; 
+            isDaytime = true;
+            
+            if (isFlashlightOn) toggleFlashlight(); 
+            
+            uiElems.fade.style.opacity = 0;
+            
+            setTimeout(async () => { 
+                isFrozen = false; 
+                await showSubtitle("It's morning, I have some more work to do!", 2000);
+                showSubtitle("I need to get out and walk on the path to go there!", 4000);
+            }, 3000); 
+        }
+
+        function resetToNightTime() {
+            scene.background.setHex(0x000000);
+            scene.fog.color.setHex(0x000000);
+            scene.fog.density = 0.08;
+            if (sunLight) sunLight.intensity = 0;
+            ambientLight.intensity = 0;
+            
+            isDaytime = false;
+            hasEnteredHouse = false;
+            hasTurnedOnLight = false;
+            hasScared = false; 
+            morningTextTriggered = false; 
+            currentCycle++; 
+
+            if (currentCycle === 2) {
+                houseGroup.visible = false;
+                hideRabbitHand(); 
+            }
+            
+            switchBtn.userData.isOn = false;
+            switchBtn.material.color.setHex(0xaaaaaa);
+            switchBtn.material.emissive.setHex(0x0055ff);
+            houseLight.intensity = 0;
+            
+            doorMesh.userData.isOpen = false;
+            doorPivot.rotation.y = 0;
+            
+            camera.position.set(0, 2, 45);
+            pitch = 0; yaw = 0;
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+            
+            uiElems.fade.style.opacity = 0;
+            setTimeout(() => { isFrozen = false; }, 3000);
+        }
+
+        const raycaster = new THREE.Raycaster();
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && controlsEnabled && !isFrozen) {
+                
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(interactables);
+                
+                if (intersects.length > 0 && intersects[0].distance < 6) {
+                    const obj = intersects[0].object;
+                    const type = obj.userData.type;
+
+                    if (isDaytime && type !== 'door') return;
+
+                    if (type === 'door') {
+                        if (!isDaytime && hasEnteredHouse) {
+                            playSound('door_close'); 
+                            showSubtitle("The door is locked! I can't get out.", 3000);
+                            return;
+                        }
+
+                        obj.userData.isOpen = !obj.userData.isOpen;
+                        playSound(obj.userData.isOpen ? 'door_open' : 'door_close');
+                        doorPivot.rotation.y = obj.userData.isOpen ? Math.PI / 2 : 0; 
+                    } 
+                    else if (type === 'switch') {
+                        playSound('click');
+                        obj.userData.isOn = true; 
+                        hasTurnedOnLight = true;
+                        houseLight.intensity = 1.2;
+                        obj.material.color.setHex(0x00ff00);
+                        obj.material.emissive.setHex(0x000000); 
+
+                        if (currentCycle === 1) {
+                            showSubtitle("I'm tired, better get some sleep!", 0);
+                        }
+                    }
+                    else if (type === 'bed') {
+                        if (!hasTurnedOnLight) {
+                            showSubtitle("I need to find the light switch first...", 3000);
+                        } else {
+                            if (!isFrozen) { 
+                                isFrozen = true; 
+                                hideSubtitle(); 
+                                uiElems.fade.style.opacity = 1;
+                                
+                                setTimeout(() => {
+                                    uiElems.endText.textContent = "Zzz...";
+                                    uiElems.endText.classList.add('blinking');
+                                    
+                                    setTimeout(() => {
+                                        triggerWakeUp();
+                                    }, 5000);
+                                }, 3000); 
+                            }
+                        }
+                    }
+                    else if (type === 'tv') {
+                        playSound('click'); 
+                        showSubtitle("I don't wanna touch it rightnow", 3000);
+                    }
+                }
+            }
+        });
+
+        let shakeTimer = 0;
+
+        function triggerJumpscare() {
+            hasScared = true; isFrozen = true;
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            rabbitGroup.position.copy(camera.position).add(dir.multiplyScalar(1.5));
+            rabbitGroup.position.y = camera.position.y - 0.5; 
+            rabbitGroup.quaternion.copy(camera.quaternion);
+            rabbitLight.position.set(0, 1.3, 2.5); rabbitLight.intensity = 6; 
+            shakeTimer = 3.0; 
+            document.body.classList.add('shaking'); 
+            playSound('jumpscare_1');
+
+            setTimeout(() => {
+                document.body.classList.remove('shaking'); rabbitGroup.position.y = -10; rabbitLight.intensity = 0; 
+                isFrozen = false; showSubtitle("oh fuck, just a rabbit, that thing scared me!", 4000);
+            }, 3000);
+        }
+
+        function triggerFinalJumpscare() {
+            isFrozen = true;
+            isFinalJumpscare = true; 
+
+            hideRabbitHand();
+
+            scene.fog.density = 0;
+            rMat.emissive.setHex(0x444444);
+
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const SCALE = 6.5; 
+            rabbitGroup.scale.set(SCALE, SCALE, SCALE); 
+            
+            const dist = 1.25 * SCALE + 2.5;
+            rabbitGroup.position.copy(camera.position).add(dir.multiplyScalar(dist));
+            rabbitGroup.position.y = camera.position.y - (1.1 * SCALE); 
+            rabbitGroup.quaternion.copy(camera.quaternion);
+
+            finalScareBasePos.copy(rabbitGroup.position);
+            
+            rabbitLight.position.set(0, 1.5, 1.5); 
+            rabbitLight.intensity = 50; 
+            
+            document.body.classList.add('shaking'); 
+            playContinuousJumpscare();
+
+            setTimeout(() => {
+                uiElems.fade.style.pointerEvents = 'auto'; 
+                uiElems.fade.style.opacity = 1;
+                uiElems.fade.style.backgroundColor = 'rgba(30, 0, 0, 0.2)';
+                
+                uiElems.fade.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; z-index: 999; position: relative;">
+                        <span style="color:#ff0000; font-size:6rem; margin-bottom: 20px; text-shadow: 0 0 20px #ff0000, 4px 4px 0 #000; font-weight:bold; animation: fast-flicker 0.1s infinite;">GAME OVER</span>
+                        <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #f00; border: 4px solid #f00; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
+                    </div>
+                `;
+                
+                document.exitPointerLock();
+                const btnFinal = document.getElementById('btn-final-menu');
+                btnFinal.addEventListener('mouseover', (e) => {
+                    e.target.style.background = '#f00';
+                    e.target.style.color = '#000';
+                    e.target.style.boxShadow = '0 0 30px #f00';
+                });
+                btnFinal.addEventListener('mouseout', (e) => {
+                    e.target.style.background = 'rgba(0,0,0,0.8)';
+                    e.target.style.color = '#f00';
+                    e.target.style.boxShadow = 'none';
+                });
+                
+                btnFinal.addEventListener('click', () => {
+                    location.reload();
+                });
+            }, 1000); 
+        }
+
+        const clock = new THREE.Clock();
+        let lightningTimer = Math.random() * 2 + 0.5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Freeze logic if game is paused
+            if (isPaused) {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if (isFinalJumpscare) {
+                rabbitGroup.position.x = finalScareBasePos.x + (Math.random() - 0.5) * 0.3;
+                rabbitGroup.position.y = finalScareBasePos.y + (Math.random() - 0.5) * 0.3;
+                rabbitGroup.position.z = finalScareBasePos.z + (Math.random() - 0.5) * 0.3;
+                
+                const s = 6.5 + (Math.random() - 0.5) * 0.3;
+                rabbitGroup.scale.set(s, s, s);
+
+                rabbitLight.intensity = 40 + Math.random() * 30;
+                eyeMat.color.setHex(Math.random() > 0.3 ? 0xff0000 : 0x770000);
+            }
+
+            if (!isDaytime && !controlsEnabled && uiElems.main.classList.contains('hidden') === false) {
+                lightningTimer -= delta;
+                if (lightningTimer <= 0) {
+                    scene.background.setHex(0xffffff);
+                    setTimeout(() => scene.background.setHex(0x111111), 50);
+                    setTimeout(() => scene.background.setHex(0xffffff), 100);
+                    setTimeout(() => scene.background.setHex(0x000000), 150);
+                    lightningTimer = Math.random() * 1.5 + 0.5; 
+                }
+            }
+
+            if (controlsEnabled && !isFrozen) {
+                
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(interactables);
+                
+                let isHoveringInteractable = false;
+                if (intersects.length > 0 && intersects[0].distance < 6) {
+                    const type = intersects[0].object.userData.type;
+                    if (!isDaytime || type === 'door') {
+                        isHoveringInteractable = true;
+                    }
+                }
+
+                if (isHoveringInteractable) {
+                    uiElems.crosshair.classList.add('glow');
+                } else {
+                    uiElems.crosshair.classList.remove('glow');
+                }
+
+                const dir = new THREE.Vector3();
+                dir.z = Number(keys.w) - Number(keys.s);
+                dir.x = Number(keys.d) - Number(keys.a);
+                dir.normalize(); 
+
+                // Chỉ tính là đang di chuyển nếu có bấm phím W, A, S, D
+                const isMoving = (keys.w || keys.a || keys.s || keys.d) && dir.length() > 0;
+                
+                if (isMoving) {
+                    const euler = new THREE.Euler(0, yaw, 0, 'YXZ');
+                    const moveVec = new THREE.Vector3(dir.x, 0, -dir.z).applyEuler(euler).normalize().multiplyScalar(moveSpeed * delta);
+                    
+                    let nextX = camera.position.x + moveVec.x;
+                    let nextZ = camera.position.z + moveVec.z;
+                    
+                    camera.position.x = nextX;
+                    camera.position.z = nextZ;
+
+                    // KIỂM TRA PHÁT ÂM THANH BƯỚC CHÂN
+                    const inHouseCurrent = (camera.position.z < -37 && Math.abs(camera.position.x) < 8);
+                    const activeStep = inHouseCurrent ? sfx.house_steps : sfx.path_steps;
+                    const inactiveStep = inHouseCurrent ? sfx.path_steps : sfx.house_steps;
+
+                    // Tắt tiếng bước chân không dùng tới
+                    if (!inactiveStep.paused) {
+                        inactiveStep.pause();
+                        inactiveStep.currentTime = 0;
+                    }
+
+                    // CHỈ tiếp tục phát khi file âm thanh hiện tại đã chạy xong hoặc đang dừng
+                    if (activeStep.paused || activeStep.ended) {
+                        activeStep.volume = masterVolume;
+                        activeStep.play().catch(e => console.log("Missing step audio"));
+                    }
+
+                    if (currentCycle === 2 && !isDaytime) {
+                        finalCycleWalkTime += delta; 
+                        
+                        if (finalCycleWalkTime > 1.5 && !finalCycleFlags[0]) {
+                            showSubtitle("i finally done killing those rabbit, i fuckin hate this job", 4000);
+                            showRabbitHand(); 
+                            finalCycleFlags[0] = true;
+                        }
+                        if (finalCycleWalkTime > 12 && !finalCycleFlags[1]) {
+                            showSubtitle("Everyday is just a repeat cycle, I'm such a loser!", 4000);
+                            finalCycleFlags[1] = true;
+                        }
+                        if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) {
+                            showSubtitle("WTF where is my house> why is the path so fuckin long???", 4000);
+                            finalCycleFlags[2] = true;
+                        }
+                        if (finalCycleWalkTime > 40 && !finalCycleFlags[3]) {
+                            finalCycleFlags[3] = true;
+                            triggerFinalJumpscare();
+                        }
+                    }
+                } else {
+                    // Nếu KHÔNG bấm các nút di chuyển -> Tạm dừng cả 2 loại tiếng bước chân
+                    if (sfx.house_steps && !sfx.house_steps.paused) {
+                        sfx.house_steps.pause();
+                        sfx.house_steps.currentTime = 0;
+                    }
+                    if (sfx.path_steps && !sfx.path_steps.paused) {
+                        sfx.path_steps.pause();
+                        sfx.path_steps.currentTime = 0;
+                    }
+                }
+
+                const inHouseCurrent = (camera.position.z < -37 && Math.abs(camera.position.x) < 8);
+                if (isAmbientPlaying) {
+                    const targetVol = (inHouseCurrent && currentCycle !== 2) ? masterVolume * 0.1 : masterVolume; 
+                    sfx.ambient_bg.volume += (targetVol - sfx.ambient_bg.volume) * 0.05; 
+                }
+
+                camera.position.y = 2.5; 
+                
+                if (currentCycle !== 2 && camera.position.z > -36) { 
+                    let isOffPath = false;
+                    if (camera.position.x > 4.5) { camera.position.x = 4.5; isOffPath = true; }
+                    else if (camera.position.x < -4.5) { camera.position.x = -4.5; isOffPath = true; }
+                    if (isOffPath && !isDaytime) showSubtitle("wrong way, i need to follow the path!", 2000);
+                } 
+                else if (currentCycle === 2) {
+                    if (camera.position.x > 4.5) { camera.position.x = 4.5; }
+                    else if (camera.position.x < -4.5) { camera.position.x = -4.5; }
+                }
+
+                if(camera.position.x > 90) camera.position.x = 90;
+                if(camera.position.x < -90) camera.position.x = -90;
+                
+                if (isDaytime && camera.position.z > 45) {
+                    if (!isFrozen) {
+                        isFrozen = true;
+                        uiElems.fade.style.opacity = 1;
+                        setTimeout(() => resetToNightTime(), 3000);
+                    }
+                } else if (!isDaytime && camera.position.z > 48) {
+                    camera.position.z = 48;
+                    showSubtitle("I shouldn't go back, I need to get home.", 2000);
+                }
+
+                if (isDaytime && camera.position.z > 0 && !morningTextTriggered) {
+                    morningTextTriggered = true;
+                    showSubtitle("weird, why i can't hear the bird chirping anymore in the last couple days", 4000);
+                }
+                
+                const isDoorOpen = doorMesh.userData.isOpen;
+                if (currentCycle !== 2 && camera.position.z < -36 && camera.position.z > -54 && Math.abs(camera.position.x) < 9) {
+                    // Nếu đã vào nhà ban đêm, khóa va chạm vật lý không cho lùi hoặc đi ra ngoài
+                    if (!isDaytime && hasEnteredHouse) {
+                        if (camera.position.z > -37.5) {
+                            camera.position.z = -37.5;
+                        }
+                    } else {
+                        if (camera.position.z < -36 && camera.position.z > -38 && !isDoorOpen && Math.abs(camera.position.x) < 3) {
+                            camera.position.z = camera.position.z < -37 ? -37.5 : -36;
+                        } 
+                        else if (camera.position.z < -36 && camera.position.z > -38 && Math.abs(camera.position.x) >= 2) {
+                            camera.position.z = camera.position.z < -37 ? -37.5 : -36;
+                        }
+                    }
+
+                    if (camera.position.z <= -38 && Math.abs(camera.position.x) > 7.5) {
+                        camera.position.x = Math.sign(camera.position.x) * 7.5;
+                    }
+                    else if (camera.position.z < -52) {
+                        camera.position.z = -52;
+                    }
+
+                    if (camera.position.x > -7.75 && camera.position.x < -2.25 && camera.position.z > -53 && camera.position.z < -45) {
+                        const dLeft = camera.position.x - (-7.75); const dRight = -2.25 - camera.position.x;
+                        const dFront = camera.position.z - (-53); const dBack = -45 - camera.position.z;
+                        const min = Math.min(Math.abs(dLeft), Math.abs(dRight), Math.abs(dFront), Math.abs(dBack));
+                        if (min === Math.abs(dLeft)) camera.position.x = -7.75;
+                        else if (min === Math.abs(dRight)) camera.position.x = -2.25;
+                        else if (min === Math.abs(dFront)) camera.position.z = -53;
+                        else camera.position.z = -45;
+                    }
+
+                    if (camera.position.x > 1.0 && camera.position.x < 7.0 && camera.position.z > -53 && camera.position.z < -49.25) {
+                        const dLeft = camera.position.x - 1.0; const dRight = 7.0 - camera.position.x;
+                        const dFront = camera.position.z - (-53); const dBack = -49.25 - camera.position.z;
+                        const min = Math.min(Math.abs(dLeft), Math.abs(dRight), Math.abs(dFront), Math.abs(dBack));
+                        if (min === Math.abs(dLeft)) camera.position.x = -7.75;
+                        else if (min === Math.abs(dRight)) camera.position.x = 7.0;
+                        else if (min === Math.abs(dFront)) camera.position.z = -53;
+                        else camera.position.z = -49.25;
+                    }
+                }
+
+                if (currentCycle !== 2 && !hasEnteredHouse && camera.position.z < -38 && Math.abs(camera.position.x) < 5) {
+                    hasEnteredHouse = true;
+                    hideRabbitHand();
+
+                    // Tự động sập cửa và khóa chốt ngay khi bước vào nhà
+                    if (doorMesh.userData.isOpen) {
+                        doorMesh.userData.isOpen = false;
+                        doorPivot.rotation.y = 0;
+                        playSound('door_close');
+                    }
+                    playSound('click'); // Tiếng khóa chốt phụ
+
+                    if (currentCycle === 1) { 
+                        if (isFlashlightOn) toggleFlashlight(); 
+                        flashlightDead = true; 
+                        showSubtitle("The door slammed shut and locked! I need to find the light button...", 4000);
+                    }
+                }
+
+                if (!isDaytime && currentCycle === 1 && !hasScared && camera.position.z < -10 && camera.position.z > -15) {
+                    triggerJumpscare();
+                }
+            } else {
+                // Đảm bảo dừng tiếng bước chân nếu bị khóa phím / mất chuột / menu pause
+                if (sfx.house_steps && !sfx.house_steps.paused) { sfx.house_steps.pause(); sfx.house_steps.currentTime = 0; }
+                if (sfx.path_steps && !sfx.path_steps.paused) { sfx.path_steps.pause(); sfx.path_steps.currentTime = 0; }
+            }
+
+            if (shakeTimer > 0) {
+                shakeTimer -= delta;
+                camera.position.x += (Math.random() - 0.5) * 0.1;
+                camera.position.y += (Math.random() - 0.5) * 0.1;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio, false);
+        });
+
+        // Bắt đầu vòng lặp game
+        animate();
+
+    </script>
+</body>
+</html>
