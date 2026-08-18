@@ -855,11 +855,8 @@
         trim.position.set(0, 0.82, -1.1); bedGroup.add(trim);
 
         const pillowMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
-        const pillow1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 1.1), pillowMat);
-        pillow1.position.set(-1.1, 1.2, -2.5); pillow1.rotation.x = 0.15; bedGroup.add(pillow1);
-
-        const pillow2 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 1.1), pillowMat);
-        pillow2.position.set(1.1, 1.2, -2.5); pillow2.rotation.x = 0.15; bedGroup.add(pillow2);
+        const pillow1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 1.2), pillowMat);
+        pillow1.position.set(0, 1.2, -2.5); pillow1.rotation.x = 0.15; bedGroup.add(pillow1);
 
         const bedHitbox = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.2, 7.2), new THREE.MeshBasicMaterial({ visible: false }));
         bedHitbox.position.set(0, 1.1, 0);
@@ -1205,9 +1202,16 @@
             cameraBasePos.copy(camera.position);
 
             const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            rabbitGroup.position.copy(camera.position).add(dir.multiplyScalar(1.5));
-            rabbitGroup.position.y = camera.position.y - 0.5; 
+            const downVec = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
+            
+            // Đặt thỏ ngay trước mặt camera theo không gian tương đối (local space)
+            // Hạ xuống một chút theo hướng nhìn để khuôn mặt thỏ nằm chính giữa màn hình
+            rabbitGroup.position.copy(camera.position)
+                .add(dir.multiplyScalar(1.5))
+                .add(downVec.multiplyScalar(0.72)); 
+                
             rabbitGroup.quaternion.copy(camera.quaternion);
+            
             rabbitLight.position.set(0, 1.3, 2.5); rabbitLight.intensity = 6; 
             shakeTimer = 3.0; 
             document.body.classList.add('shaking'); 
@@ -1233,12 +1237,18 @@
             rMat.emissive.setHex(0x444444);
 
             const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const downVec = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
+            
             const SCALE = 6.5; 
             rabbitGroup.scale.set(SCALE, SCALE, SCALE); 
             
             const dist = 1.25 * SCALE + 2.5;
-            rabbitGroup.position.copy(camera.position).add(dir.multiplyScalar(dist));
-            rabbitGroup.position.y = camera.position.y - (1.1 * SCALE); 
+            
+            // Khóa mục tiêu thỏ khổng lồ chính giữa camera bất chấp góc nhìn
+            rabbitGroup.position.copy(camera.position)
+                .add(dir.multiplyScalar(dist))
+                .add(downVec.multiplyScalar(1.1 * SCALE));
+                
             rabbitGroup.quaternion.copy(camera.quaternion);
 
             finalScareBasePos.copy(rabbitGroup.position);
@@ -1436,44 +1446,51 @@
                 }
                 
                 const isDoorOpen = doorMesh.userData.isOpen;
-                if (currentCycle !== 2 && camera.position.z < -36 && camera.position.z > -54 && Math.abs(camera.position.x) < 9) {
+                if (currentCycle !== 2 && camera.position.z < -35 && camera.position.z > -55 && Math.abs(camera.position.x) < 9) {
+                    
+                    // 1. XỬ LÝ VA CHẠM TƯỜNG TRƯỚC VÀ CỬA (MẶT TIỀN)
                     if (!isDaytime && hasEnteredHouse) {
-                        if (camera.position.z > -37.5) {
-                            camera.position.z = -37.5;
-                        }
+                        // Khóa chặt cửa không cho ra khi đã vào nhà buổi tối
+                        if (camera.position.z > -38.0) camera.position.z = -38.0;
                     } else {
-                        if (camera.position.z < -36 && camera.position.z > -38 && !isDoorOpen && Math.abs(camera.position.x) < 3) {
-                            camera.position.z = camera.position.z < -37 ? -37.5 : -36;
-                        } 
-                        else if (camera.position.z < -36 && camera.position.z > -38 && Math.abs(camera.position.x) >= 2) {
-                            camera.position.z = camera.position.z < -37 ? -37.5 : -36;
+                        // Xử lý đi qua cửa
+                        if (camera.position.z < -36.5 && camera.position.z > -38.5) {
+                            if (Math.abs(camera.position.x) > 1.8) {
+                                // Đụng tường hai bên cửa
+                                camera.position.z = camera.position.z > -37.5 ? -36.5 : -38.5;
+                            } else if (!isDoorOpen) {
+                                // Đụng cửa đóng
+                                camera.position.z = camera.position.z > -37.5 ? -36.5 : -38.5;
+                            }
                         }
                     }
 
-                    if (camera.position.z <= -38 && Math.abs(camera.position.x) > 7.5) {
-                        camera.position.x = Math.sign(camera.position.x) * 7.5;
-                    }
-                    else if (camera.position.z < -52) {
-                        camera.position.z = -52;
+                    // 2. BO KÍN 4 BỨC TƯỜNG XUNG QUANH (Tuyệt đối không lọt qua góc)
+                    if (camera.position.z <= -37.5) {
+                        // Chặn tường trái/phải
+                        if (camera.position.x > 7.0) camera.position.x = 7.0;
+                        if (camera.position.x < -7.0) camera.position.x = -7.0;
+                        // Chặn tường sau (lưng nhà)
+                        if (camera.position.z < -52.0) camera.position.z = -52.0;
                     }
 
-                    if (camera.position.x > -7.75 && camera.position.x < -2.25 && camera.position.z > -53 && camera.position.z < -45) {
-                        const dLeft = camera.position.x - (-7.75); const dRight = -2.25 - camera.position.x;
-                        const dFront = camera.position.z - (-53); const dBack = -45 - camera.position.z;
-                        const min = Math.min(Math.abs(dLeft), Math.abs(dRight), Math.abs(dFront), Math.abs(dBack));
-                        if (min === Math.abs(dLeft)) camera.position.x = -7.75;
-                        else if (min === Math.abs(dRight)) camera.position.x = -2.25;
-                        else if (min === Math.abs(dFront)) camera.position.z = -53;
+                    // 3. VA CHẠM VỚI ĐỒ VẬT TRONG PHÒNG
+                    // Va chạm hộp giới hạn Giường
+                    if (camera.position.x > -7.5 && camera.position.x < -2.25 && camera.position.z > -53 && camera.position.z < -45) {
+                        const dRight = Math.abs(-2.25 - camera.position.x);
+                        const dFront = Math.abs(-45 - camera.position.z);
+                        if (dRight < dFront) camera.position.x = -2.25;
                         else camera.position.z = -45;
                     }
 
+                    // Va chạm hộp giới hạn Bàn
                     if (camera.position.x > 1.0 && camera.position.x < 7.0 && camera.position.z > -53 && camera.position.z < -49.25) {
-                        const dLeft = camera.position.x - 1.0; const dRight = 7.0 - camera.position.x;
-                        const dFront = camera.position.z - (-53); const dBack = -49.25 - camera.position.z;
-                        const min = Math.min(Math.abs(dLeft), Math.abs(dRight), Math.abs(dFront), Math.abs(dBack));
-                        if (min === Math.abs(dLeft)) camera.position.x = -7.75;
-                        else if (min === Math.abs(dRight)) camera.position.x = 7.0;
-                        else if (min === Math.abs(dFront)) camera.position.z = -53;
+                        const dLeft = Math.abs(camera.position.x - 1.0);
+                        const dRight = Math.abs(7.0 - camera.position.x);
+                        const dFront = Math.abs(camera.position.z - (-49.25));
+                        const min = Math.min(dLeft, dRight, dFront);
+                        if (min === dLeft) camera.position.x = 1.0;
+                        else if (min === dRight) camera.position.x = 7.0;
                         else camera.position.z = -49.25;
                     }
                 }
