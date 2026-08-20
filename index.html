@@ -505,7 +505,6 @@
             uiElems.settings.classList.remove('hidden');
         });
 
-        // FIXED: Exiting settings returns to pause menu so player can resume smoothly
         document.getElementById('btn-settings-back').addEventListener('click', () => {
             uiElems.settings.classList.add('hidden');
             uiElems.pause.classList.remove('hidden');
@@ -528,10 +527,12 @@
             door_close: new Audio('musics/door_close.mp3'),
             ambient_bg: new Audio('musics/ambient_bg.mp3'),
             jumpscare_1: new Audio('musics/jumpscare_1.mp3'),
-            jumpscare_final: new Audio('musics/jumpscare_final.mp3')
+            jumpscare_final: new Audio('musics/jumpscare_final.mp3'),
+            rain: new Audio('musics/rain.mp3')
         };
         sfx.ambient_bg.loop = true;
         sfx.jumpscare_final.loop = true;
+        sfx.rain.loop = true;
 
         volSlider.addEventListener('input', (e) => {
             masterVolume = parseFloat(e.target.value);
@@ -544,6 +545,7 @@
             if (sfx.jumpscare_final) sfx.jumpscare_final.volume = masterVolume;
             if (sfx.path_steps) sfx.path_steps.volume = masterVolume;
             if (sfx.house_steps) sfx.house_steps.volume = masterVolume;
+            if (sfx.rain) sfx.rain.volume = masterVolume;
         });
 
         let audioCtx;
@@ -799,6 +801,25 @@
         scene.add(trunkInstancedMesh);
         scene.add(leavesInstancedMesh);
 
+        const rainCount = 20000;
+        const rainGeo = new THREE.BufferGeometry();
+        const rainPositions = new Float32Array(rainCount * 3);
+        for(let i = 0; i < rainCount; i++) {
+            rainPositions[i*3] = (Math.random() - 0.5) * 80;     // Tọa độ X: trải rộng hai bên đường
+            rainPositions[i*3+1] = Math.random() * 40;           // Tọa độ Y: độ cao từ 0 đến 40
+            rainPositions[i*3+2] = (Math.random() - 0.5) * 800 - 300;  // Tọa độ Z: kéo dài vùng mưa (-700 đến 100), xa hơn điểm jumpscare cuối
+        }
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+        const rainMat = new THREE.PointsMaterial({
+            color: 0x888888,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.5
+        });
+        const rainDrop = new THREE.Points(rainGeo, rainMat);
+        rainDrop.visible = false;
+        scene.add(rainDrop);
+
         const houseGroup = new THREE.Group();
         houseGroup.position.set(0, 0, -45);
         scene.add(houseGroup);
@@ -828,7 +849,6 @@
         const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.4), new THREE.MeshLambertMaterial({color: 0x4a2a10}));
         doorMesh.position.set(2, 3, 0); doorMesh.userData = { type: 'door', isOpen: false }; doorPivot.add(doorMesh); interactables.push(doorMesh);
 
-        // UPGRADED DETAILED BED WITH CONTRASTING PILLOWS AND RED BLANKET
         const bedGroup = new THREE.Group();
         bedGroup.position.set(-5, 0, -4);
 
@@ -877,7 +897,6 @@
         switchBtn.position.set(2.5, 4, 7.4); switchBtn.userData = { type: 'switch', isOn: false };
         houseGroup.add(switchBtn); interactables.push(switchBtn);
 
-        // ROAD RABBIT (Sitting near house at z = -20)
         const roadRabbitGroup = new THREE.Group();
         const roadRMat = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
 
@@ -893,10 +912,9 @@
         const rNose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.05), new THREE.MeshBasicMaterial({ color: 0xffaacc })); rNose.position.set(0, 0.5, 0.58); roadRabbitGroup.add(rNose);
 
         roadRabbitGroup.position.set(0, 0, -20);
-        roadRabbitGroup.rotation.y = 0; // Front facing player walking from z = 45 towards -45
+        roadRabbitGroup.rotation.y = 0; 
         scene.add(roadRabbitGroup);
 
-        // MONSTER RABBIT (JUMPSCARE)
         const rabbitGroup = new THREE.Group();
         const rMat = new THREE.MeshLambertMaterial({ color: 0xcccccc }); 
         const rBody = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), rMat); rBody.position.y = 0.5; rabbitGroup.add(rBody);
@@ -950,7 +968,6 @@
             }, 1000);
         });
 
-        // Click canvas to regain pointer lock if focus lost
         container.addEventListener('click', () => {
             if (uiElems.main.classList.contains('hidden') && 
                 uiElems.pause.classList.contains('hidden') && 
@@ -1014,6 +1031,7 @@
                 if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
                 if (isAmbientPlaying) sfx.ambient_bg.pause();
                 if (isFinalJumpscare) sfx.jumpscare_final.pause();
+                if (sfx.rain && !sfx.rain.paused) sfx.rain.pause();
             } else if (controlsEnabled) {
                 uiElems.pause.classList.add('hidden');
                 uiElems.settings.classList.add('hidden');
@@ -1194,7 +1212,6 @@
             hasScared = true; 
             isFrozen = true;
 
-            // Hide road rabbit permanently after trigger
             if (roadRabbitGroup) {
                 roadRabbitGroup.visible = false;
             }
@@ -1204,8 +1221,6 @@
             const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             const downVec = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
             
-            // Đặt thỏ ngay trước mặt camera theo không gian tương đối (local space)
-            // Hạ xuống một chút theo hướng nhìn để khuôn mặt thỏ nằm chính giữa màn hình
             rabbitGroup.position.copy(camera.position)
                 .add(dir.multiplyScalar(1.5))
                 .add(downVec.multiplyScalar(0.72)); 
@@ -1221,7 +1236,7 @@
                 document.body.classList.remove('shaking'); 
                 rabbitGroup.position.y = -10; 
                 rabbitLight.intensity = 0; 
-                camera.position.copy(cameraBasePos); // Restore exact position
+                camera.position.copy(cameraBasePos);
                 isFrozen = false; 
                 showSubtitle("oh, just a stupid rabbit, really creeped me out!", 4000);
             }, 3000);
@@ -1230,6 +1245,18 @@
         function triggerFinalJumpscare() {
             isFrozen = true;
             isFinalJumpscare = true; 
+
+            if (isAmbientPlaying) {
+                sfx.ambient_bg.pause();
+                sfx.ambient_bg.currentTime = 0;
+                isAmbientPlaying = false;
+            }
+            if (sfx.path_steps && !sfx.path_steps.paused) sfx.path_steps.pause();
+            if (sfx.house_steps && !sfx.house_steps.paused) sfx.house_steps.pause();
+            if (sfx.rain && !sfx.rain.paused) sfx.rain.pause();
+            
+            // Nếu có âm thanh tổng hợp nào đang chạy qua Web Audio API, ta cũng có thể ngắt (Tùy chọn thêm nếu cần)
+            // nhưng các âm thanh chính đã bị dừng ở trên.
 
             hideRabbitHand();
 
@@ -1244,7 +1271,6 @@
             
             const dist = 1.25 * SCALE + 2.5;
             
-            // Khóa mục tiêu thỏ khổng lồ chính giữa camera bất chấp góc nhìn
             rabbitGroup.position.copy(camera.position)
                 .add(dir.multiplyScalar(dist))
                 .add(downVec.multiplyScalar(1.1 * SCALE));
@@ -1314,7 +1340,59 @@
                 eyeMat.color.setHex(Math.random() > 0.3 ? 0xff0000 : 0x770000);
             }
 
-            if (!isDaytime && !controlsEnabled && uiElems.main.classList.contains('hidden') === false) {
+            // Thêm mưa và sấm chớp cho Event 3, và chỉ sấm chớp khi CHƯA nhảy jumpscare cuối
+            if (currentCycle === 2 && !isDaytime && !isPaused) {
+                
+                // Bật âm thanh mưa
+                if (sfx.rain && sfx.rain.paused && !isFinalJumpscare) {
+                    sfx.rain.volume = masterVolume;
+                    sfx.rain.play().catch(e => console.log("Missing rain.mp3"));
+                }
+
+                // Hiển thị và diễn hoạt mưa rơi
+                rainDrop.visible = true;
+                const pos = rainDrop.geometry.attributes.position.array;
+                for(let i = 1; i < rainCount * 3; i += 3) {
+                    pos[i] -= 30 * delta; // Tốc độ rơi của mưa
+                    if (pos[i] < 0) {
+                        pos[i] = 40; // Lặp lại hạt mưa từ trên cao khi chạm đất
+                    }
+                }
+                rainDrop.geometry.attributes.position.needsUpdate = true;
+
+                // Chỉ hiện sấm chớp nếu chưa bị Jumpscare cuối
+                if (!isFinalJumpscare) {
+                    lightningTimer -= delta;
+                    if (lightningTimer <= 0) {
+                        scene.background.setHex(0xffffff);
+                        scene.fog.color.setHex(0xffffff);
+                        
+                        setTimeout(() => {
+                            scene.background.setHex(0x111111);
+                            scene.fog.color.setHex(0x111111);
+                        }, 50);
+                        setTimeout(() => {
+                            scene.background.setHex(0xffffff);
+                            scene.fog.color.setHex(0xffffff);
+                        }, 100);
+                        setTimeout(() => {
+                            scene.background.setHex(0x000000);
+                            scene.fog.color.setHex(0x000000);
+                        }, 150);
+                        
+                        playSound('thunder');
+                        lightningTimer = Math.random() * 5 + 3; 
+                    }
+                }
+            } else {
+                rainDrop.visible = false; // Ẩn mưa đi nếu ở các cycle khác
+                if (sfx.rain && !sfx.rain.paused) {
+                    sfx.rain.pause();
+                }
+            }
+            
+            // Giữ lại logic nháy sáng ngoài Menu (Cycle 1 ban đêm)
+            if (currentCycle !== 2 && !isDaytime && !controlsEnabled && uiElems.main.classList.contains('hidden') === false) {
                 lightningTimer -= delta;
                 if (lightningTimer <= 0) {
                     scene.background.setHex(0xffffff);
@@ -1448,34 +1526,24 @@
                 const isDoorOpen = doorMesh.userData.isOpen;
                 if (currentCycle !== 2 && camera.position.z < -35 && camera.position.z > -55 && Math.abs(camera.position.x) < 9) {
                     
-                    // 1. XỬ LÝ VA CHẠM TƯỜNG TRƯỚC VÀ CỬA (MẶT TIỀN)
                     if (!isDaytime && hasEnteredHouse) {
-                        // Khóa chặt cửa không cho ra khi đã vào nhà buổi tối
                         if (camera.position.z > -38.0) camera.position.z = -38.0;
                     } else {
-                        // Xử lý đi qua cửa
                         if (camera.position.z < -36.5 && camera.position.z > -38.5) {
                             if (Math.abs(camera.position.x) > 1.8) {
-                                // Đụng tường hai bên cửa
                                 camera.position.z = camera.position.z > -37.5 ? -36.5 : -38.5;
                             } else if (!isDoorOpen) {
-                                // Đụng cửa đóng
                                 camera.position.z = camera.position.z > -37.5 ? -36.5 : -38.5;
                             }
                         }
                     }
 
-                    // 2. BO KÍN 4 BỨC TƯỜNG XUNG QUANH (Tuyệt đối không lọt qua góc)
                     if (camera.position.z <= -37.5) {
-                        // Chặn tường trái/phải
                         if (camera.position.x > 7.0) camera.position.x = 7.0;
                         if (camera.position.x < -7.0) camera.position.x = -7.0;
-                        // Chặn tường sau (lưng nhà)
                         if (camera.position.z < -52.0) camera.position.z = -52.0;
                     }
 
-                    // 3. VA CHẠM VỚI ĐỒ VẬT TRONG PHÒNG
-                    // Va chạm hộp giới hạn Giường
                     if (camera.position.x > -7.5 && camera.position.x < -2.25 && camera.position.z > -53 && camera.position.z < -45) {
                         const dRight = Math.abs(-2.25 - camera.position.x);
                         const dFront = Math.abs(-45 - camera.position.z);
@@ -1483,7 +1551,6 @@
                         else camera.position.z = -45;
                     }
 
-                    // Va chạm hộp giới hạn Bàn
                     if (camera.position.x > 1.0 && camera.position.x < 7.0 && camera.position.z > -53 && camera.position.z < -49.25) {
                         const dLeft = Math.abs(camera.position.x - 1.0);
                         const dRight = Math.abs(7.0 - camera.position.x);
@@ -1513,7 +1580,6 @@
                     }
                 }
 
-                // TRIGGER JUMPSCARE WHEN APPROACHING ROAD RABBIT NEAR HOUSE (z = -20)
                 if (!isDaytime && currentCycle === 1 && !hasScared && camera.position.z < -14 && camera.position.z > -25) {
                     triggerJumpscare();
                 }
