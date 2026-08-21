@@ -501,12 +501,14 @@
             jumpscare_final: new Audio('musics/jumpscare_final.mp3'),
             rain: new Audio('musics/rain.mp3'),
             knock: new Audio('musics/knock.mp3'),
-            player_hit: new Audio('musics/player_hit.mp3')
+            player_hit: new Audio('musics/player_hit.mp3'),
+            music_3am: new Audio('musics/3AM.mp3') // NEW 3AM MUSIC
         };
         sfx.ambient_bg.loop = true;
         sfx.jumpscare_final.loop = true;
         sfx.rain.loop = true;
         sfx.knock.loop = true;
+        sfx.music_3am.loop = true; // NEW 3AM MUSIC LOOP
 
         volSlider.addEventListener('input', (e) => {
             masterVolume = parseFloat(e.target.value);
@@ -521,6 +523,7 @@
             if (sfx.house_steps) sfx.house_steps.volume = masterVolume;
             if (sfx.rain) sfx.rain.volume = masterVolume;
             if (sfx.knock) sfx.knock.volume = masterVolume;
+            if (sfx.music_3am) sfx.music_3am.volume = masterVolume; // NEW VOLUME CONTROL
         });
 
         let audioCtx;
@@ -667,7 +670,7 @@
         function startAmbientSound() {
             if (!audioCtx || isAmbientPlaying) return;
             isAmbientPlaying = true;
-            if (sfx.ambient_bg) {
+            if (sfx.ambient_bg && !isNightmare) { // UPDATE: Prevent ambient background during nightmare
                 sfx.ambient_bg.volume = masterVolume;
                 sfx.ambient_bg.play().catch(e => console.log("Missing ambient_bg.mp3"));
             }
@@ -1184,15 +1187,23 @@
                 if (isFinalJumpscare) sfx.jumpscare_final.pause();
                 if (sfx.rain && !sfx.rain.paused) sfx.rain.pause();
                 if (isNightmare && sfx.knock && !sfx.knock.paused) sfx.knock.pause();
+                // UPDATE: Pause 3AM music if game is paused
+                if (isNightmare && sfx.music_3am && !sfx.music_3am.paused) sfx.music_3am.pause();
             } else if (controlsEnabled) {
                 uiElems.pause.classList.add('hidden');
                 uiElems.settings.classList.add('hidden');
                 uiElems.ingameMenuBtn.classList.remove('hidden');
                 isPaused = false;
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-                if (isAmbientPlaying) sfx.ambient_bg.play().catch(()=>{});
                 if (isFinalJumpscare) sfx.jumpscare_final.play().catch(()=>{});
                 if (isNightmare && sfx.knock && sfx.knock.paused && !nightmareDoorOpened) sfx.knock.play().catch(()=>{});
+                
+                // UPDATE: Resume the correct background music
+                if (isNightmare) {
+                    if (sfx.music_3am && sfx.music_3am.paused) sfx.music_3am.play().catch(()=>{});
+                } else {
+                    if (isAmbientPlaying) sfx.ambient_bg.play().catch(()=>{});
+                }
             }
         });
 
@@ -1257,6 +1268,12 @@
             
             uiElems.fade.style.opacity = 0;
             
+            // UPDATE: Nếu thức dậy từ Nightmare, mở lại âm thanh môi trường buổi sáng
+            if (fromNightmare && isAmbientPlaying && sfx.ambient_bg.paused) {
+                sfx.ambient_bg.currentTime = 0;
+                sfx.ambient_bg.play().catch(()=>{});
+            }
+
             setTimeout(async () => { 
                 isFrozen = false; 
                 if (fromNightmare) {
@@ -1279,6 +1296,16 @@
             camera.position.set(-4, 2.5, -45); 
             pitch = 0; yaw = 0; 
             camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+
+            // UPDATE: Tắt nhạc nền cũ và bật nhạc 3AM
+            if (sfx.ambient_bg && !sfx.ambient_bg.paused) {
+                sfx.ambient_bg.pause();
+            }
+            if (sfx.music_3am) {
+                sfx.music_3am.volume = masterVolume; // Âm lượng max, không bị giảm khi ở trong nhà
+                sfx.music_3am.currentTime = 0;
+                sfx.music_3am.play().catch(e => console.log("Missing 3AM.mp3"));
+            }
 
             if (sfx.knock) {
                 sfx.knock.volume = masterVolume;
@@ -1316,6 +1343,9 @@
             isFrozen = true;
             playSound('player_hit');
             
+            // UPDATE: Dừng nhạc 3AM đột ngột ngay lúc bị jumpscare để tạo cảm giác kinh dị
+            if (sfx.music_3am) sfx.music_3am.pause();
+
             uiElems.fade.style.transition = "opacity 0.1s";
             uiElems.fade.style.opacity = 1;
             
@@ -1733,6 +1763,8 @@
 
                 const inHouseCurrent = (camera.position.z < -37 && Math.abs(camera.position.x) < 8);
                 if (isAmbientPlaying) {
+                    // UPDATE: Đoạn này vẫn giữ nguyên, nó chỉ làm nhỏ tiếng sfx.ambient_bg khi ở trong nhà. 
+                    // Nhạc 3AM (sfx.music_3am) không bị ảnh hưởng bởi logic này nên sẽ giữ nguyên âm lượng max.
                     const targetVol = (inHouseCurrent && currentCycle !== 2) ? masterVolume * 0.1 : masterVolume; 
                     sfx.ambient_bg.volume += (targetVol - sfx.ambient_bg.volume) * 0.05; 
                 }
