@@ -710,7 +710,7 @@
 
         function toggleFlashlight() {
             if (flashlightDead) {
-                showSubtitle("damn it, the flashlight is dead", 3000);
+                showSubtitle("lmao, the flashlight is dead", 3000);
                 return;
             }
             isFlashlightOn = !isFlashlightOn;
@@ -1042,8 +1042,8 @@
             }, 10000);
 
             setTimeout(async () => {
-                await showSubtitle("such a hard day of work, I should go home", 3000);
-                showSubtitle("my home is at the end of this path", 3000);
+                await showSubtitle("What a hard day of work, I should go home!", 3000);
+                showSubtitle("My woodenhouse is at the end of this path", 3000);
             }, 1000);
         });
 
@@ -1188,9 +1188,9 @@
             setTimeout(async () => { 
                 isFrozen = false; 
                 if (fromNightmare) {
-                    await showSubtitle("So that was a weird dream", 3500);
+                    await showSubtitle("OH my fucking god, It was just a nightmare!", 3500);
                 }
-                await showSubtitle("It's morning, I have some more work to do!", 2000);
+                await showSubtitle("It's morning now, I have some more work to do!", 3000);
                 showSubtitle("I need to get out and walk on the path to go there!", 4000);
             }, 3000); 
         }
@@ -1217,7 +1217,7 @@
             uiElems.fade.style.opacity = 0;
             setTimeout(() => { 
                 isFrozen = false; 
-                showSubtitle("Who's knocking...? Let's see if my flashlight works.", 4000);
+                showSubtitle("Who the fuck knocking my door at 3AM? I have to check that nigga out!", 4000);
             }, 2000);
         }
 
@@ -1619,7 +1619,7 @@
                         finalCycleWalkTime += delta; 
                         
                         if (finalCycleWalkTime > 1.5 && !finalCycleFlags[0]) {
-                            showSubtitle("i finally done killing those rabbit, i fuckin hate this job", 4000);
+                            showSubtitle("i finally done killing those rabbit!", 4000);
                             showRabbitHand(); 
                             finalCycleFlags[0] = true;
                         }
@@ -1628,7 +1628,7 @@
                             finalCycleFlags[1] = true;
                         }
                         if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) {
-                            showSubtitle("WTF where is my house> why is the path so fuckin long???", 4000);
+                            showSubtitle("WTF where is my house and why is the path so fuckin long???", 4000);
                             finalCycleFlags[2] = true;
                         }
                         if (finalCycleWalkTime > 40 && !finalCycleFlags[3]) {
@@ -1688,7 +1688,7 @@
 
                 if (isDaytime && camera.position.z > 0 && !morningTextTriggered) {
                     morningTextTriggered = true;
-                    showSubtitle("weird, why i can't hear the bird chirping anymore in the last couple days", 4000);
+                    showSubtitle("weird, why won any bird chirping anymore in the last couple days", 4000);
                 }
                 
                 const isDoorOpen = doorMesh.userData.isOpen;
