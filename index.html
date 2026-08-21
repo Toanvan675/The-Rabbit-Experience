@@ -441,6 +441,11 @@
         let shakeTimer = 0;
         let cameraBasePos = new THREE.Vector3();
 
+        // NIGHTMARE VARIABLES
+        let isNightmare = false;
+        let nightmareDoorOpened = false;
+        let knockingInterval = null;
+
         function showRabbitHand() { uiElems.rabbitHand.classList.add('visible'); }
         function hideRabbitHand() { uiElems.rabbitHand.classList.remove('visible'); }
 
@@ -493,11 +498,14 @@
             ambient_bg: new Audio('musics/ambient_bg.mp3'),
             jumpscare_1: new Audio('musics/jumpscare_1.mp3'),
             jumpscare_final: new Audio('musics/jumpscare_final.mp3'),
-            rain: new Audio('musics/rain.mp3')
+            rain: new Audio('musics/rain.mp3'),
+            knock: new Audio('musics/knock.mp3'),
+            player_hit: new Audio('musics/player_hit.mp3')
         };
         sfx.ambient_bg.loop = true;
         sfx.jumpscare_final.loop = true;
         sfx.rain.loop = true;
+        sfx.knock.loop = true;
 
         volSlider.addEventListener('input', (e) => {
             masterVolume = parseFloat(e.target.value);
@@ -511,6 +519,7 @@
             if (sfx.path_steps) sfx.path_steps.volume = masterVolume;
             if (sfx.house_steps) sfx.house_steps.volume = masterVolume;
             if (sfx.rain) sfx.rain.volume = masterVolume;
+            if (sfx.knock) sfx.knock.volume = masterVolume;
         });
 
         let audioCtx;
@@ -549,14 +558,19 @@
 
             if (sfx[type]) {
                 let sound = sfx[type];
-                if (['door_open', 'door_close', 'flashlight_on', 'flashlight_off', 'jumpscare_1'].includes(type)) {
+                if (['door_open', 'door_close', 'flashlight_on', 'flashlight_off', 'jumpscare_1', 'player_hit'].includes(type)) {
                     sound = sound.cloneNode();
                 }
                 sound.volume = masterVolume;
-                sound.play().catch(e => console.log(`Missing or blocked audio: ${type}.mp3`));
+                sound.play().catch(e => {
+                    playSynthFallback(type);
+                });
                 return;
             }
+            playSynthFallback(type);
+        }
 
+        function playSynthFallback(type) {
             const t = audioCtx.currentTime;
             if (type === 'ui_blip') {
                 const noiseSource = audioCtx.createBufferSource();
@@ -624,6 +638,28 @@
                 gain.gain.setValueAtTime(0.015, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
                 osc.connect(gain); gain.connect(masterGain);
                 osc.start(t); osc.stop(t + 0.04);
+            }
+            else if (type === 'knock_synth') {
+                const osc = audioCtx.createOscillator(); osc.type = 'triangle';
+                osc.frequency.setValueAtTime(80, t);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(1.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.1);
+            }
+            else if (type === 'player_hit') {
+                const osc = audioCtx.createOscillator(); osc.type = 'square';
+                osc.frequency.setValueAtTime(120, t); osc.frequency.exponentialRampToValueAtTime(10, t + 0.3);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(2.0, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.3);
+                
+                const noiseSource = audioCtx.createBufferSource(); noiseSource.buffer = noiseBuffer;
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(1.5, t); noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                noiseSource.connect(noiseGain); noiseGain.connect(masterGain);
+                noiseSource.start(t);
             }
         }
 
@@ -770,9 +806,9 @@
         const rainGeo = new THREE.BufferGeometry();
         const rainPositions = new Float32Array(rainCount * 3);
         for(let i = 0; i < rainCount; i++) {
-            rainPositions[i*3] = (Math.random() - 0.5) * 80;     // Tọa độ X: trải rộng hai bên đường
-            rainPositions[i*3+1] = Math.random() * 40;           // Tọa độ Y: độ cao từ 0 đến 40
-            rainPositions[i*3+2] = (Math.random() - 0.5) * 800 - 300;  // Tọa độ Z: kéo dài vùng mưa (-700 đến 100), xa hơn điểm jumpscare cuối
+            rainPositions[i*3] = (Math.random() - 0.5) * 80;     
+            rainPositions[i*3+1] = Math.random() * 40;           
+            rainPositions[i*3+2] = (Math.random() - 0.5) * 800 - 300;  
         }
         rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
         const rainMat = new THREE.PointsMaterial({
@@ -784,6 +820,10 @@
         const rainDrop = new THREE.Points(rainGeo, rainMat);
         rainDrop.visible = false;
         scene.add(rainDrop);
+
+        // --- BLOOD PATH GROUP FOR NIGHTMARE ---
+        const bloodGroup = new THREE.Group();
+        scene.add(bloodGroup);
 
         const houseGroup = new THREE.Group();
         houseGroup.position.set(0, 0, -45);
@@ -851,6 +891,80 @@
         houseGroup.add(bedGroup);
         interactables.push(bedHitbox);
 
+        // --- BÀN CẠNH ĐẦU GIƯỜNG (BEDSIDE NIGHTSTAND) ---
+        const nightstandGroup = new THREE.Group();
+        nightstandGroup.position.set(-2.0, 0, -6.5); // Đặt bàn nằm sát đầu giường bên phải
+
+        const nightstandWoodMat = new THREE.MeshLambertMaterial({ color: 0x2e1c11 });
+        const drawerHandleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+
+        // Chân bàn
+        const legGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12);
+        const leg1 = new THREE.Mesh(legGeo, nightstandWoodMat); leg1.position.set(-0.6, 0.25, -0.6); nightstandGroup.add(leg1);
+        const leg2 = new THREE.Mesh(legGeo, nightstandWoodMat); leg2.position.set(0.6, 0.25, -0.6); nightstandGroup.add(leg2);
+        const leg3 = new THREE.Mesh(legGeo, nightstandWoodMat); leg3.position.set(-0.6, 0.25, 0.6); nightstandGroup.add(leg3);
+        const leg4 = new THREE.Mesh(legGeo, nightstandWoodMat); leg4.position.set(0.6, 0.25, 0.6); nightstandGroup.add(leg4);
+
+        // Thân tủ bàn
+        const cabinetBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 1.4), nightstandWoodMat);
+        cabinetBody.position.set(0, 0.95, 0);
+        nightstandGroup.add(cabinetBody);
+
+        // Mặt bàn (chồi ra nhẹ)
+        const tableTopSurface = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.08, 1.55), nightstandWoodMat);
+        tableTopSurface.position.set(0, 1.44, 0);
+        nightstandGroup.add(tableTopSurface);
+
+        // Tay cầm ngăn kéo
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.1), drawerHandleMat);
+        handle.position.set(0, 0.95, 0.73);
+        nightstandGroup.add(handle);
+
+        houseGroup.add(nightstandGroup);
+
+        // --- ĐỒNG HỒ ĐIỆN TỬ ĐẶT TRÊN BÀN ĐẦU GIƯỜNG ---
+        const clockCanvas = document.createElement('canvas');
+        clockCanvas.width = 256; clockCanvas.height = 128;
+        const clockCtx = clockCanvas.getContext('2d');
+        const clockTex = new THREE.CanvasTexture(clockCanvas);
+        clockTex.minFilter = THREE.LinearFilter;
+        clockTex.magFilter = THREE.LinearFilter;
+
+        function updateClockTime(timeStr) {
+            clockCtx.fillStyle = '#000000';
+            clockCtx.fillRect(0, 0, 256, 128);
+            clockCtx.fillStyle = '#ff0000';
+            clockCtx.font = 'bold 50px "Courier New"';
+            clockCtx.textAlign = 'center';
+            clockCtx.textBaseline = 'middle';
+            
+            // Hiệu ứng phát sáng LED
+            clockCtx.shadowColor = '#ff0000';
+            clockCtx.shadowBlur = 10;
+            
+            clockCtx.fillText(timeStr, 128, 64);
+            clockTex.needsUpdate = true;
+        }
+
+        updateClockTime("9:00 PM");
+
+        const clockBodyMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const clockFaceMat = new THREE.MeshBasicMaterial({ map: clockTex });
+        
+        const clockGroup = new THREE.Group();
+        const clockBody = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.45, 0.28), clockBodyMat);
+        const clockFace = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.36), clockFaceMat);
+        clockFace.position.set(0, 0, 0.15);
+        clockGroup.add(clockBody);
+        clockGroup.add(clockFace);
+        
+        // Đặt ngay ngắn trên mặt bàn đầu giường
+        clockGroup.position.set(-2.0, 1.71, -6.5);
+        clockGroup.rotation.x = -0.15; // Nghiêng nhẹ lên trên
+        clockGroup.rotation.y = Math.PI / 6; // Xoay góc về hướng người chơi/giường ngủ để dễ nhìn hơn
+        houseGroup.add(clockGroup);
+
+        // Bàn lớn và TV giữ nguyên vị trí cũ
         const table = new THREE.Mesh(new THREE.BoxGeometry(5, 2.5, 2.5), new THREE.MeshLambertMaterial({color: 0x3e2723}));
         table.position.set(4, 1.25, -6); houseGroup.add(table);
         
@@ -997,6 +1111,7 @@
                 if (isAmbientPlaying) sfx.ambient_bg.pause();
                 if (isFinalJumpscare) sfx.jumpscare_final.pause();
                 if (sfx.rain && !sfx.rain.paused) sfx.rain.pause();
+                if (isNightmare && sfx.knock && !sfx.knock.paused) sfx.knock.pause();
             } else if (controlsEnabled) {
                 uiElems.pause.classList.add('hidden');
                 uiElems.settings.classList.add('hidden');
@@ -1005,6 +1120,7 @@
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
                 if (isAmbientPlaying) sfx.ambient_bg.play().catch(()=>{});
                 if (isFinalJumpscare) sfx.jumpscare_final.play().catch(()=>{});
+                if (isNightmare && sfx.knock && sfx.knock.paused && !nightmareDoorOpened) sfx.knock.play().catch(()=>{});
             }
         });
 
@@ -1043,7 +1159,7 @@
             if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
         });
 
-        function triggerWakeUp() {
+        function triggerWakeUp(fromNightmare = false) {
             uiElems.endText.classList.remove('blinking');
             uiElems.endText.textContent = "";
             hideSubtitle(); 
@@ -1063,15 +1179,99 @@
             flashlightDead = false; 
             isDaytime = true;
             
+            updateClockTime("5:00 AM");
+
             if (isFlashlightOn) toggleFlashlight(); 
             
             uiElems.fade.style.opacity = 0;
             
             setTimeout(async () => { 
                 isFrozen = false; 
+                if (fromNightmare) {
+                    await showSubtitle("So that was a weird dream", 3500);
+                }
                 await showSubtitle("It's morning, I have some more work to do!", 2000);
                 showSubtitle("I need to get out and walk on the path to go there!", 4000);
             }, 3000); 
+        }
+
+        function triggerNightmare() {
+            isNightmare = true;
+            flashlightDead = false; // Cho phép sử dụng lại đèn pin
+            uiElems.endText.classList.remove('blinking');
+            uiElems.endText.textContent = "";
+            
+            updateClockTime("3:00 AM");
+            
+            camera.position.set(-4, 2.5, -45); 
+            pitch = 0; yaw = 0; 
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+
+            if (sfx.knock) {
+                sfx.knock.volume = masterVolume;
+                sfx.knock.play().catch(e => {
+                    knockingInterval = setInterval(() => playSound('knock_synth'), 400);
+                });
+            }
+
+            uiElems.fade.style.opacity = 0;
+            setTimeout(() => { 
+                isFrozen = false; 
+                showSubtitle("Who's knocking...? Let's see if my flashlight works.", 4000);
+            }, 2000);
+        }
+
+        function generateBloodPath() {
+            const bloodMat = new THREE.MeshLambertMaterial({ 
+                color: 0x660000, 
+                transparent: true, 
+                opacity: 0.85 
+            });
+            for (let i = 0; i < 40; i++) {
+                const size = 0.2 + Math.random() * 0.4;
+                const drop = new THREE.Mesh(new THREE.CylinderGeometry(size, size, 0.05, 16), bloodMat);
+                
+                const zPos = -34 + (i * 0.9) + (Math.random() - 0.5); 
+                const xPos = (Math.random() - 0.5) * 3; 
+                
+                drop.position.set(xPos, 0.05, zPos);
+                bloodGroup.add(drop);
+            }
+        }
+
+        function triggerNightmareHit() {
+            isFrozen = true;
+            playSound('player_hit');
+            
+            uiElems.fade.style.transition = "opacity 0.1s";
+            uiElems.fade.style.opacity = 1;
+            
+            setTimeout(() => { uiElems.fade.style.opacity = 0; }, 100);
+            setTimeout(() => { uiElems.fade.style.opacity = 1; }, 250);
+            setTimeout(() => { uiElems.fade.style.opacity = 0; }, 400);
+            
+            setTimeout(() => { 
+                uiElems.fade.style.transition = "opacity 2s"; 
+                uiElems.fade.style.opacity = 1; 
+                
+                setTimeout(() => {
+                    isNightmare = false;
+                    nightmareDoorOpened = false;
+                    
+                    while(bloodGroup.children.length > 0) { 
+                        bloodGroup.remove(bloodGroup.children[0]); 
+                    }
+                    
+                    doorMesh.userData.isOpen = false;
+                    doorPivot.rotation.y = 0;
+                    
+                    camera.position.set(-4, 2.5, -45); 
+                    pitch = 0; yaw = 0;
+                    camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+                    
+                    triggerWakeUp(true); 
+                }, 2000);
+            }, 600);
         }
 
         function resetToNightTime() {
@@ -1121,17 +1321,31 @@
                     const type = obj.userData.type;
 
                     if (isDaytime && type !== 'door') return;
+                    if (isNightmare && type !== 'door') return; 
 
                     if (type === 'door') {
-                        if (!isDaytime && hasEnteredHouse) {
+                        if (isNightmare) {
+                            if (!nightmareDoorOpened) {
+                                nightmareDoorOpened = true;
+                                if (sfx.knock) sfx.knock.pause();
+                                if (knockingInterval) clearInterval(knockingInterval);
+                                
+                                obj.userData.isOpen = true;
+                                playSound('door_open');
+                                doorPivot.rotation.y = Math.PI / 2;
+                                
+                                generateBloodPath();
+                            }
+                        }
+                        else if (!isDaytime && hasEnteredHouse) {
                             playSound('door_close'); 
                             showSubtitle("I locked the door, no need to get out at night!.", 3000);
                             return;
+                        } else {
+                            obj.userData.isOpen = !obj.userData.isOpen;
+                            playSound(obj.userData.isOpen ? 'door_open' : 'door_close');
+                            doorPivot.rotation.y = obj.userData.isOpen ? Math.PI / 2 : 0; 
                         }
-
-                        obj.userData.isOpen = !obj.userData.isOpen;
-                        playSound(obj.userData.isOpen ? 'door_open' : 'door_close');
-                        doorPivot.rotation.y = obj.userData.isOpen ? Math.PI / 2 : 0; 
                     } 
                     else if (type === 'switch') {
                         playSound('click');
@@ -1159,7 +1373,11 @@
                                     uiElems.endText.classList.add('blinking');
                                     
                                     setTimeout(() => {
-                                        triggerWakeUp();
+                                        if (currentCycle === 1 && !isNightmare && !isDaytime) {
+                                            triggerNightmare();
+                                        } else {
+                                            triggerWakeUp();
+                                        }
                                     }, 5000);
                                 }, 3000); 
                             }
@@ -1220,9 +1438,6 @@
             if (sfx.house_steps && !sfx.house_steps.paused) sfx.house_steps.pause();
             if (sfx.rain && !sfx.rain.paused) sfx.rain.pause();
             
-            // Nếu có âm thanh tổng hợp nào đang chạy qua Web Audio API, ta cũng có thể ngắt (Tùy chọn thêm nếu cần)
-            // nhưng các âm thanh chính đã bị dừng ở trên.
-
             hideRabbitHand();
 
             scene.fog.density = 0;
@@ -1305,58 +1520,40 @@
                 eyeMat.color.setHex(Math.random() > 0.3 ? 0xff0000 : 0x770000);
             }
 
-            // Thêm mưa và sấm chớp cho Event 3, và chỉ sấm chớp khi CHƯA nhảy jumpscare cuối
+            // Mưa sấm chớp
             if (currentCycle === 2 && !isDaytime && !isPaused) {
-                
-                // Bật âm thanh mưa
                 if (sfx.rain && sfx.rain.paused && !isFinalJumpscare) {
                     sfx.rain.volume = masterVolume;
                     sfx.rain.play().catch(e => console.log("Missing rain.mp3"));
                 }
-
-                // Hiển thị và diễn hoạt mưa rơi
                 rainDrop.visible = true;
                 const pos = rainDrop.geometry.attributes.position.array;
                 for(let i = 1; i < rainCount * 3; i += 3) {
-                    pos[i] -= 30 * delta; // Tốc độ rơi của mưa
-                    if (pos[i] < 0) {
-                        pos[i] = 40; // Lặp lại hạt mưa từ trên cao khi chạm đất
-                    }
+                    pos[i] -= 30 * delta; 
+                    if (pos[i] < 0) pos[i] = 40; 
                 }
                 rainDrop.geometry.attributes.position.needsUpdate = true;
 
-                // Chỉ hiện sấm chớp nếu chưa bị Jumpscare cuối
                 if (!isFinalJumpscare) {
                     lightningTimer -= delta;
                     if (lightningTimer <= 0) {
                         scene.background.setHex(0xffffff);
                         scene.fog.color.setHex(0xffffff);
                         
-                        setTimeout(() => {
-                            scene.background.setHex(0x111111);
-                            scene.fog.color.setHex(0x111111);
-                        }, 50);
-                        setTimeout(() => {
-                            scene.background.setHex(0xffffff);
-                            scene.fog.color.setHex(0xffffff);
-                        }, 100);
-                        setTimeout(() => {
-                            scene.background.setHex(0x000000);
-                            scene.fog.color.setHex(0x000000);
-                        }, 150);
+                        setTimeout(() => { scene.background.setHex(0x111111); scene.fog.color.setHex(0x111111); }, 50);
+                        setTimeout(() => { scene.background.setHex(0xffffff); scene.fog.color.setHex(0xffffff); }, 100);
+                        setTimeout(() => { scene.background.setHex(0x000000); scene.fog.color.setHex(0x000000); }, 150);
                         
                         playSound('thunder');
                         lightningTimer = Math.random() * 5 + 3; 
                     }
                 }
             } else {
-                rainDrop.visible = false; // Ẩn mưa đi nếu ở các cycle khác
-                if (sfx.rain && !sfx.rain.paused) {
-                    sfx.rain.pause();
-                }
+                rainDrop.visible = false; 
+                if (sfx.rain && !sfx.rain.paused) { sfx.rain.pause(); }
             }
             
-            // Giữ lại logic nháy sáng ngoài Menu (Cycle 1 ban đêm)
+            // Chớp ngoài menu
             if (currentCycle !== 2 && !isDaytime && !controlsEnabled && uiElems.main.classList.contains('hidden') === false) {
                 lightningTimer -= delta;
                 if (lightningTimer <= 0) {
@@ -1450,6 +1647,11 @@
                     }
                 }
 
+                // CHECK NIGHTMARE HIT
+                if (isNightmare && nightmareDoorOpened && camera.position.z > -15) {
+                    triggerNightmareHit();
+                }
+
                 const inHouseCurrent = (camera.position.z < -37 && Math.abs(camera.position.x) < 8);
                 if (isAmbientPlaying) {
                     const targetVol = (inHouseCurrent && currentCycle !== 2) ? masterVolume * 0.1 : masterVolume; 
@@ -1462,7 +1664,8 @@
                     let isOffPath = false;
                     if (camera.position.x > 4.5) { camera.position.x = 4.5; isOffPath = true; }
                     else if (camera.position.x < -4.5) { camera.position.x = -4.5; isOffPath = true; }
-                    if (isOffPath && !isDaytime) showSubtitle("wrong way, i need to follow the path!", 2000);
+                    
+                    if (isOffPath && !isDaytime && !isNightmare) showSubtitle("wrong way, i need to follow the path!", 2000);
                 } 
                 else if (currentCycle === 2) {
                     if (camera.position.x > 4.5) { camera.position.x = 4.5; }
@@ -1491,7 +1694,7 @@
                 const isDoorOpen = doorMesh.userData.isOpen;
                 if (currentCycle !== 2 && camera.position.z < -35 && camera.position.z > -55 && Math.abs(camera.position.x) < 9) {
                     
-                    if (!isDaytime && hasEnteredHouse) {
+                    if (!isDaytime && hasEnteredHouse && !isNightmare) {
                         if (camera.position.z > -38.0) camera.position.z = -38.0;
                     } else {
                         if (camera.position.z < -36.5 && camera.position.z > -38.5) {
@@ -1509,13 +1712,23 @@
                         if (camera.position.z < -52.0) camera.position.z = -52.0;
                     }
 
-                    if (camera.position.x > -7.5 && camera.position.x < -2.25 && camera.position.z > -53 && camera.position.z < -45) {
-                        const dRight = Math.abs(-2.25 - camera.position.x);
+                    // Va chạm với khu vực giường ngủ
+                    if (camera.position.x > -7.5 && camera.position.x < -2.5 && camera.position.z > -53 && camera.position.z < -45) {
+                        const dRight = Math.abs(-2.5 - camera.position.x);
                         const dFront = Math.abs(-45 - camera.position.z);
-                        if (dRight < dFront) camera.position.x = -2.25;
+                        if (dRight < dFront) camera.position.x = -2.5;
                         else camera.position.z = -45;
                     }
 
+                    // Va chạm với bàn đầu giường (Đã được thu nhỏ hitbox cho khớp)
+                    if (camera.position.x > -3.2 && camera.position.x < -0.8 && camera.position.z > -52.5 && camera.position.z < -50.5) {
+                        const dRight = Math.abs(-0.8 - camera.position.x);
+                        const dFront = Math.abs(-50.5 - camera.position.z);
+                        if (dRight < dFront) camera.position.x = -0.8;
+                        else camera.position.z = -50.5;
+                    }
+
+                    // Va chạm với bàn TV
                     if (camera.position.x > 1.0 && camera.position.x < 7.0 && camera.position.z > -53 && camera.position.z < -49.25) {
                         const dLeft = Math.abs(camera.position.x - 1.0);
                         const dRight = Math.abs(7.0 - camera.position.x);
