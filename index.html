@@ -678,8 +678,9 @@
 
         const container = document.getElementById('game-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000); 
-        scene.fog = new THREE.FogExp2(0x000000, 0.08); 
+        // Cập nhật sương mù và nền trời đêm màu hơi xanh xám để cây cối hiện ra lờ mờ
+        scene.background = new THREE.Color(0x060708); 
+        scene.fog = new THREE.FogExp2(0x060708, 0.05); // Density mỏng hơn một chút
 
         fovSlider.addEventListener('input', (e) => {
             if (camera) {
@@ -696,7 +697,8 @@
         renderer.setSize(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio, false);
         container.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0x000000); 
+        // Ánh sáng môi trường ban đêm có màu trắng hơi tối (0.08) để thấy được cây
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.08); 
         scene.add(ambientLight);
         
         let sunLight;
@@ -1003,12 +1005,56 @@
         clockGroup.rotation.y = Math.PI / 6;
         houseGroup.add(clockGroup);
 
-        // Bàn lớn và TV
-        const table = new THREE.Mesh(new THREE.BoxGeometry(5, 2.5, 2.5), new THREE.MeshLambertMaterial({color: 0x3e2723}));
-        table.position.set(4, 1.25, -6); houseGroup.add(table);
+        // Bàn lớn và TV đời cổ
+        const table = new THREE.Mesh(new THREE.BoxGeometry(5, 1.5, 2.5), new THREE.MeshLambertMaterial({color: 0x3e2723}));
+        table.position.set(4, 0.75, -6); // Thấp bằng tủ đầu giường
+        houseGroup.add(table);
         
-        const tv = new THREE.Mesh(new THREE.BoxGeometry(3, 2, 0.5), new THREE.MeshLambertMaterial({color: 0x050505}));
-        tv.position.set(4, 3.5, -6); tv.userData = { type: 'tv' }; houseGroup.add(tv); interactables.push(tv);
+        // Tạo TV đời cổ (CRT)
+        const tvCasingMat = new THREE.MeshLambertMaterial({color: 0x4a3b2c}); // Vỏ gỗ/nhựa cũ
+        const tvScreenMat = new THREE.MeshLambertMaterial({color: 0x1a2b2c, emissive: 0x050a0a}); // Màn hình lồi
+        const tvDetailsMat = new THREE.MeshLambertMaterial({color: 0x111111}); // Nút bấm, ăng ten
+        
+        // Thân TV (Hitbox chính cho tương tác)
+        const tv = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 1.6), tvCasingMat);
+        tv.position.set(4, 2.4, -6.2); // Đặt lên mặt bàn mới
+        tv.userData = { type: 'tv' }; 
+        houseGroup.add(tv); 
+        interactables.push(tv);
+        
+        // Màn hình
+        const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 0.2), tvScreenMat);
+        tvScreen.position.set(-0.2, 0, 0.8);
+        tv.add(tvScreen);
+        
+        // Bảng điều khiển bên phải màn hình
+        const tvPanel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.1), tvDetailsMat);
+        tvPanel.position.set(0.9, 0, 0.8);
+        tv.add(tvPanel);
+        
+        // Nút vặn
+        const knobGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.15, 16);
+        knobGeo.rotateX(Math.PI / 2);
+        const knob1 = new THREE.Mesh(knobGeo, tvDetailsMat);
+        knob1.position.set(0.9, 0.3, 0.85);
+        tv.add(knob1);
+        const knob2 = new THREE.Mesh(knobGeo, tvDetailsMat);
+        knob2.position.set(0.9, -0.3, 0.85);
+        tv.add(knob2);
+        
+        // Ăng ten (Antenna râu)
+        const antennaBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.4), tvDetailsMat);
+        antennaBase.position.set(0, 0.95, 0);
+        tv.add(antennaBase);
+        const antennaRodGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.2, 8);
+        const ant1 = new THREE.Mesh(antennaRodGeo, new THREE.MeshLambertMaterial({color: 0x888888}));
+        ant1.position.set(-0.3, 1.4, 0);
+        ant1.rotation.z = Math.PI / 6;
+        tv.add(ant1);
+        const ant2 = new THREE.Mesh(antennaRodGeo, new THREE.MeshLambertMaterial({color: 0x888888}));
+        ant2.position.set(0.3, 1.4, 0);
+        ant2.rotation.z = -Math.PI / 6;
+        tv.add(ant2);
 
         const chairGroup = new THREE.Group();
         const chairWoodMat = new THREE.MeshLambertMaterial({ color: 0x2d1b0e });
@@ -1041,9 +1087,9 @@
             chairGroup.add(slat);
         }
 
-        // Đặt ghế gỗ kế bên bàn
-        chairGroup.position.set(4, 0, -3.6);
-        chairGroup.rotation.y = -Math.PI / 5; // Xoay nhẹ hướng về góc căn phòng
+        // Đặt ghế gỗ ra góc khác (gần cửa ra vào bên phải)
+        chairGroup.position.set(5.5, 0, 4);
+        chairGroup.rotation.y = -Math.PI / 4; // Xoay hướng vào giữa phòng
         houseGroup.add(chairGroup);
 
         const switchMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa, emissive: 0x0055ff, emissiveIntensity: 1 });
@@ -1378,11 +1424,11 @@
         }
 
         function resetToNightTime() {
-            scene.background.setHex(0x000000);
-            scene.fog.color.setHex(0x000000);
-            scene.fog.density = 0.08;
+            scene.background.setHex(0x060708);
+            scene.fog.color.setHex(0x060708);
+            scene.fog.density = 0.05;
             if (sunLight) sunLight.intensity = 0;
-            ambientLight.intensity = 0;
+            ambientLight.intensity = 0.08;
             
             isDaytime = false;
             hasEnteredHouse = false;
@@ -1645,7 +1691,7 @@
                         
                         setTimeout(() => { scene.background.setHex(0x111111); scene.fog.color.setHex(0x111111); }, 50);
                         setTimeout(() => { scene.background.setHex(0xffffff); scene.fog.color.setHex(0xffffff); }, 100);
-                        setTimeout(() => { scene.background.setHex(0x000000); scene.fog.color.setHex(0x000000); }, 150);
+                        setTimeout(() => { scene.background.setHex(0x060708); scene.fog.color.setHex(0x060708); }, 150);
                         
                         playSound('thunder');
                         lightningTimer = Math.random() * 5 + 3; 
@@ -1663,7 +1709,7 @@
                     scene.background.setHex(0xffffff);
                     setTimeout(() => scene.background.setHex(0x111111), 50);
                     setTimeout(() => scene.background.setHex(0xffffff), 100);
-                    setTimeout(() => scene.background.setHex(0x000000), 150);
+                    setTimeout(() => scene.background.setHex(0x060708), 150);
                     lightningTimer = Math.random() * 1.5 + 0.5; 
                 }
             }
@@ -1850,12 +1896,12 @@
                         else camera.position.z = -49.25;
                     }
 
-                    // Va chạm với chiếc ghế gỗ mới
-                    if (camera.position.x > 2.8 && camera.position.x < 5.2 && camera.position.z > -50.0 && camera.position.z < -47.2) {
-                        const dLeft = Math.abs(camera.position.x - 2.8);
-                        const dFront = Math.abs(camera.position.z - (-47.2));
-                        if (dLeft < dFront) camera.position.x = 2.8;
-                        else camera.position.z = -47.2;
+                    // Va chạm với chiếc ghế gỗ (đã dịch chuyển sang gần cửa ra vào)
+                    if (camera.position.x > 4.0 && camera.position.x < 7.0 && camera.position.z > -42.5 && camera.position.z < -39.5) {
+                        const dLeft = Math.abs(camera.position.x - 4.0);
+                        const dBack = Math.abs(camera.position.z - (-42.5));
+                        if (dLeft < dBack) camera.position.x = 4.0;
+                        else camera.position.z = -42.5;
                     }
                 }
 
