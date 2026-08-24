@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Rabbit Experience</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            image-rendering: pixelated; 
+            image-rendering: crisp-edges; 
+        }
+
+        #eye-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 22;
+        }
+
+        #crt-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0.6;
+        }
+
+        #rabbit-hand-overlay {
+            position: absolute;
+            top: 62%;
+            left: 84%;
+            transform: translate(-35%, -45%);
+            width: 48vw;
+            max-width: 550px;
+            height: auto;
+            z-index: 25;
+            pointer-events: none;
+            transition: opacity 0.6s ease-in-out;
+            opacity: 0;
+        }
+        #rabbit-hand-overlay.visible {
+            opacity: 1 !important;
+        }
+        #rabbit-hand-overlay img {
+            width: 100%;
+            height: auto;
+            display: block;
+            mix-blend-mode: screen;
+            filter: drop-shadow(-5px -5px 15px rgba(0,0,0,0.8));
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent;
+            color: #fff;
+            text-align: center;
+        }
+        
+        .menu-bg {
+            background: radial-gradient(circle at center, #1a0505 0%, #050202 70%, #000000 100%);
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Hình bóng con thỏ kinh dị ám ảnh trong Main Menu */
+        #menu-rabbit-silhouette {
+            position: absolute;
+            bottom: 0;
+            width: 250px;
+            height: 400px;
+            background: rgba(10, 5, 5, 0.9);
+            clip-path: polygon(40% 0%, 60% 0%, 65% 20%, 75% 15%, 70% 35%, 85% 50%, 60% 100%, 40% 100%, 15% 50%, 30% 35%, 25% 15%, 35% 20%);
+            z-index: 1;
+            opacity: 0.85;
+            box-shadow: inset 0 0 40px rgba(204, 0, 0, 0.3);
+            animation: menu-rabbit-breathe 4s ease-in-out infinite;
+        }
+        #menu-rabbit-silhouette::before, #menu-rabbit-silhouette::after {
+            content: '';
+            position: absolute;
+            top: 75px;
+            width: 14px;
+            height: 14px;
+            background-color: #ff0000;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
+            animation: red-eye-flicker 2s infinite;
+        }
+        #menu-rabbit-silhouette::before { left: 95px; }
+        #menu-rabbit-silhouette::after { right: 95px; }
+
+        @keyframes menu-rabbit-breathe {
+            0%, 100% { transform: scale(1); filter: brightness(0.8); }
+            50% { transform: scale(1.02); filter: brightness(1.2); }
+        }
+        @keyframes red-eye-flicker {
+            0%, 100% { opacity: 1; }
+            45% { opacity: 0.2; }
+            50% { opacity: 0.9; }
+            55% { opacity: 0.1; }
+            60% { opacity: 1; }
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes flicker {
+            0% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            5% { opacity: 0.2; text-shadow: none; }
+            10% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            15% { opacity: 0.1; }
+            25% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            80% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            82% { opacity: 0.5; }
+            84% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+            100% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
+        }
+        
+        @keyframes fast-flicker {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        @keyframes blink-slow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+        .blinking { animation: blink-slow 1.2s infinite; }
+
+        h1 {
+            font-size: 4rem;
+            color: #cc0000;
+            margin-bottom: 50px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: flicker 4s infinite;
+            position: relative;
+            z-index: 2;
+        }
+
+        button {
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #fff;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover { background-color: #fff; color: #000; }
+
+        #main-menu button {
+            color: #cc0000;
+            border-color: #cc0000;
+            background: rgba(20, 0, 0, 0.8);
+        }
+        #main-menu button:hover {
+            background-color: #cc0000;
+            color: #000;
+        }
+
+        .menu-btns-vertical { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            align-items: center;
+        }
+        
+        .menu-btns-vertical button {
+            font-size: 1.5rem;
+            padding: 15px 40px;
+            width: 250px;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(204, 0, 0, 0.2);
+        }
+
+        #btn-play {
+            font-size: 2.5rem !important;
+            padding: 15px 60px !important;
+            margin-bottom: 15px;
+            width: 300px !important;
+        }
+
+        .menu-btns button {
+            font-size: 1.2rem;
+            padding: 12px 20px;
+            width: 180px; 
+            margin: 10px;
+        }
+
+        .info-panel {
+            background: rgba(10,10,10,0.95);
+            border: 1px solid #555;
+            padding: 40px;
+            width: 450px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,1);
+        }
+
+        #btn-ingame-menu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 2.5rem;
+            padding: 5px 15px;
+            z-index: 5;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        #btn-ingame-menu:hover {
+            background: rgba(200,0,0,0.8);
+            border-color: #f00;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+        
+        .setting-row input[type="range"] {
+            width: 200px;
+            cursor: pointer;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 6px; height: 6px;
+            background-color: rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            border-radius: 50%;
+            transition: all 0.2s ease-in-out;
+            pointer-events: none;
+        }
+
+        #crosshair.glow {
+            width: 8px; height: 8px;
+            background-color: #ff3333; 
+            box-shadow: 0 0 15px #ff0000, 0 0 5px #ff0000;
+        }
+
+        #flashlight-ui {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px; height: 70px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #888;
+            border-radius: 10px;
+            z-index: 5;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 35px;
+            transition: all 0.2s;
+        }
+        
+        #flashlight-ui.active {
+            background-color: rgba(255, 255, 200, 0.6);
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 200, 0.5);
+        }
+
+        #instructions {
+            position: absolute;
+            top: 20px; right: 20px;
+            color: rgba(255,255,255,0.6);
+            z-index: 5; font-size: 1rem;
+            pointer-events: none;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-right: 3px solid #fff;
+            text-align: right;
+            transition: opacity 2s ease-in-out;
+            opacity: 1;
+        }
+
+        #subtitle {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 4px #000;
+            z-index: 6;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            max-width: 80%;
+            white-space: pre-wrap; 
+        }
+
+        #fade-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: black;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 3s ease-in-out, background-color 1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shaking { animation: shake 0.1s infinite; }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="crt-overlay"></div>
+    <div id="fade-overlay"><span id="end-text"></span></div>
+    <canvas id="eye-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <button id="btn-ingame-menu">⚙️</button>
+        <div id="crosshair"></div>
+        <div id="flashlight-ui">🔦</div>
+        <div id="subtitle"></div>
+        <div id="rabbit-hand-overlay">
+            <img src="Hand.jpg" onerror="this.onerror=null; this.src='https://placehold.co/400x300/111/f00?text=Hand.jpg+Missing';" alt="Holding Rabbit">
+        </div>
+        <div id="instructions">
+            [W,A,S,D] Move<br>
+            [Leftclick] Interact<br>
+            [1] Flashlight<br>
+            [ESC] Menu
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="ui-layer">
+        <div class="menu-bg"></div>
+        <div id="menu-rabbit-silhouette"></div>
+        <h1>The Rabbit Experience</h1>
+        <div class="menu-btns-vertical" style="position: relative; z-index: 2;">
+            <button id="btn-play">PLAY</button>
+            <button id="btn-credit">CREDITS</button>
+            <button id="btn-donate">DONATE</button>
+        </div>
+    </div>
+
+    <!-- Pause Menu (In-game) -->
+    <div id="pause-menu" class="ui-layer hidden" style="z-index: 15;">
+        <div class="menu-bg"></div>
+        <h2 style="font-size: 3rem; margin-bottom: 30px;">PAUSED</h2>
+        <div class="menu-btns" style="display:flex; flex-direction:column;">
+            <button id="btn-resume" style="border-color:#aaa;">CONTINUE</button>
+            <button id="btn-settings">SETTINGS</button>
+            <button id="btn-quit-main">MAIN MENU</button>
+        </div>
+    </div>
+
+    <!-- Settings Menu -->
+    <div id="settings-menu" class="ui-layer hidden" style="z-index: 16;">
+        <div class="menu-bg"></div>
+        <div class="info-panel">
+            <h2>SETTINGS</h2>
+            <div class="setting-row">
+                <label>Volume:</label>
+                <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="1">
+            </div>
+            <div class="setting-row">
+                <label>FOV:</label>
+                <input type="range" id="fov-slider" min="50" max="100" step="5" value="65">
+            </div>
+        </div>
+        <button id="btn-settings-back" class="btn-back">QUAY LẠI</button>
+    </div>
+
+    <!-- Credit Menu -->
+    <div id="credit-menu" class="ui-layer hidden">
+        <div class="menu-bg"></div>
+        <div class="info-panel">
+            <h2>CREDITS</h2>
+            <p style="font-size: 1.2rem; color: #aaa;">"Toàn đẹp trai" made this shit</p>
+        </div>
+        <button class="btn-back">BACK</button>
+    </div>
+
+    <!-- Donate Menu -->
+    <div id="donate-menu" class="ui-layer hidden">
+        <div class="menu-bg"></div>
+        <div class="info-panel">
+            <h2>DONATE</h2>
+            <p>[ SCAN TO SUPPORT ]</p>
+            <img src="image_cad759.jpg" onerror="this.onerror=null; this.src='https://placehold.co/300x400/111/f00?text=QR+Code+Missing';" alt="QR Donate" style="width: 300px; max-width: 100%; height: auto; margin: 0 auto; display: block; border: 4px solid #333; border-radius: 10px;">
+        </div>
+        <button class="btn-back">BACK</button>
+    </div>
+
+    <script>
+        const eyeCanvas = document.getElementById('eye-canvas');
+        const eyeCtx = eyeCanvas.getContext('2d');
+        let eyeAnimState = 0; 
+        let eyeAnimTimer = 0;
+
+        function resizeEyeCanvas() {
+            eyeCanvas.width = window.innerWidth;
+            eyeCanvas.height = window.innerHeight;
+            if (eyeAnimState === 0) {
+                eyeCtx.clearRect(0, 0, eyeCanvas.width, eyeCanvas.height);
+            }
+        }
+        window.addEventListener('resize', resizeEyeCanvas);
+        resizeEyeCanvas();
+
+        function startEyeWakeUp() {
+            eyeAnimState = 1;
+            eyeAnimTimer = 0;
+            updateEyeAnimation(0);
+        }
+
+        function updateEyeAnimation(delta) {
+            if (eyeAnimState === 0) return;
+
+            eyeAnimTimer += delta;
+            let progress = 0;
+
+            if (eyeAnimTimer < 0.6) {
+                progress = (eyeAnimTimer / 0.6) * 0.25;
+            } else if (eyeAnimTimer < 1.0) {
+                let t = (eyeAnimTimer - 0.6) / 0.4;
+                progress = 0.25 - (t * 0.20); 
+            } else if (eyeAnimTimer < 3.5) {
+                let t = (eyeAnimTimer - 1.0) / 2.5;
+                progress = 0.05 + (t * 0.95);
+            } else {
+                progress = 1;
+                eyeAnimState = 0; 
+            }
+
+            eyeCtx.clearRect(0, 0, eyeCanvas.width, eyeCanvas.height);
+            if (progress >= 1) return;
+
+            const w = eyeCanvas.width;
+            const h = eyeCanvas.height;
+            const midY = h / 2;
+
+            const openAmount = progress * h * 0.7; 
+            const curveFlatness = progress * h * 0.4; 
+
+            eyeCtx.fillStyle = '#000000';
+
+            eyeCtx.beginPath();
+            eyeCtx.moveTo(0, 0);
+            eyeCtx.lineTo(0, midY - openAmount);
+            eyeCtx.quadraticCurveTo(w / 2, midY + (h * 0.15) - openAmount - curveFlatness, w, midY - openAmount);
+            eyeCtx.lineTo(w, 0);
+            eyeCtx.fill();
+
+            eyeCtx.beginPath();
+            eyeCtx.moveTo(0, h);
+            eyeCtx.lineTo(0, midY + openAmount);
+            eyeCtx.quadraticCurveTo(w / 2, midY - (h * 0.15) + openAmount + curveFlatness, w, midY + openAmount);
+            eyeCtx.lineTo(w, h);
+            eyeCtx.fill();
+        }
+
+        const uiElems = {
+            main: document.getElementById('main-menu'),
+            pause: document.getElementById('pause-menu'),
+            settings: document.getElementById('settings-menu'),
+            credit: document.getElementById('credit-menu'),
+            donate: document.getElementById('donate-menu'),
+            hud: document.getElementById('hud'),
+            subtitle: document.getElementById('subtitle'),
+            fade: document.getElementById('fade-overlay'),
+            endText: document.getElementById('end-text'),
+            ingameMenuBtn: document.getElementById('btn-ingame-menu'),
+            crosshair: document.getElementById('crosshair'),
+            rabbitHand: document.getElementById('rabbit-hand-overlay')
+        };
+        const flashlightBtn = document.getElementById('flashlight-ui');
+
+        let currentCycle = 1;
+        let morningTextTriggered = false;
+        let hasTurnedOnLight = false;
+        let isDaytime = false;
+        let hasScared = false;
+        let hasEnteredHouse = false;
+        let isFlashlightOn = false;
+        let flashlightDead = false;
+        
+        let finalCycleWalkTime = 0;
+        let finalCycleFlags = [false, false, false, false];
+        let isFinalJumpscare = false; 
+        let finalScareBasePos = new THREE.Vector3(); 
+        let isPaused = false;
+        let shakeTimer = 0;
+        let cameraBasePos = new THREE.Vector3();
+
+        let isNightmare = false;
+        let nightmareDoorOpened = false;
+        let hasSeenBloodInNightmare = false;
+        let knockingInterval = null;
+        let isNightmareChase = false; 
+
+        let roadRabbitState = 0; 
+        let roadRabbitTimer = 0;
+
+        function showRabbitHand() { uiElems.rabbitHand.classList.add('visible'); }
+        function hideRabbitHand() { uiElems.rabbitHand.classList.remove('visible'); }
+
+        document.getElementById('btn-credit').addEventListener('click', () => { uiElems.main.classList.add('hidden'); uiElems.credit.classList.remove('hidden'); });
+        document.getElementById('btn-donate').addEventListener('click', () => { uiElems.main.classList.add('hidden'); uiElems.donate.classList.remove('hidden'); });
+        
+        document.querySelectorAll('#credit-menu .btn-back, #donate-menu .btn-back').forEach(btn => btn.addEventListener('click', () => {
+            uiElems.credit.classList.add('hidden');
+            uiElems.donate.classList.add('hidden');
+            uiElems.main.classList.remove('hidden');
+        }));
+
+        uiElems.ingameMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.exitPointerLock();
+            uiElems.pause.classList.remove('hidden');
+            uiElems.ingameMenuBtn.classList.add('hidden');
+        });
+
+        document.getElementById('btn-resume').addEventListener('click', () => {
+            uiElems.pause.classList.add('hidden');
+            document.body.requestPointerLock();
+        });
+
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            uiElems.pause.classList.add('hidden');
+            uiElems.settings.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-settings-back').addEventListener('click', () => {
+            uiElems.settings.classList.add('hidden');
+            uiElems.pause.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-quit-main').addEventListener('click', () => {
+            location.reload(); 
+        });
+
+        const volSlider = document.getElementById('vol-slider');
+        const fovSlider = document.getElementById('fov-slider');
+        let masterVolume = 1.0;
+
+        const sfx = {
+            path_steps: new Audio('musics/path_steps.mp3'),
+            house_steps: new Audio('musics/house_steps.mp3'),
+            flashlight_on: new Audio('musics/flashlight_on.mp3'),
+            flashlight_off: new Audio('musics/flashlight_off.mp3'),
+            door_open: new Audio('musics/door_open.mp3'),
+            door_close: new Audio('musics/door_close.mp3'),
+            ambient_bg: new Audio('musics/ambient_bg.mp3'),
+            jumpscare_1: new Audio('musics/jumpscare_1.mp3'),
+            jumpscare_final: new Audio('musics/jumpscare_final.mp3'),
+            rain: new Audio('musics/rain.mp3'),
+            knock: new Audio('musics/knock.mp3'),
+            music_3am: new Audio('musics/3AM.mp3')
+        };
+        sfx.ambient_bg.loop = true;
+        sfx.jumpscare_final.loop = true;
+        sfx.rain.loop = true;
+        sfx.knock.loop = true;
+        sfx.music_3am.loop = true;
+
+        volSlider.addEventListener('input', (e) => {
+            masterVolume = parseFloat(e.target.value);
+            if (masterGain) masterGain.gain.value = masterVolume;
+            
+            if (isAmbientPlaying && sfx.ambient_bg) {
+                const inHouseCurrent = (camera && camera.position.z < -37 && Math.abs(camera.position.x) < 8);
+                sfx.ambient_bg.volume = (inHouseCurrent && currentCycle !== 2) ? masterVolume * 0.1 : masterVolume;
+            }
+            if (sfx.jumpscare_final) sfx.jumpscare_final.volume = masterVolume;
+            if (sfx.path_steps) sfx.path_steps.volume = masterVolume;
+            if (sfx.house_steps) sfx.house_steps.volume = masterVolume;
+            if (sfx.rain) sfx.rain.volume = masterVolume;
+            if (sfx.knock) sfx.knock.volume = masterVolume;
+            if (sfx.music_3am) sfx.music_3am.volume = masterVolume; 
+        });
+
+        let audioCtx;
+        let masterGain;
+        let noiseBuffer;
+        let isAmbientPlaying = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = masterVolume;
+                masterGain.connect(audioCtx.destination);
+
+                const bufferSize = audioCtx.sampleRate * 0.2; 
+                noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playContinuousJumpscare() {
+            if (sfx.jumpscare_final) {
+                sfx.jumpscare_final.volume = masterVolume;
+                sfx.jumpscare_final.currentTime = 0;
+                sfx.jumpscare_final.play().catch(e => console.log("Missing jumpscare_final.mp3"));
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+
+            if (sfx[type]) {
+                let sound = sfx[type];
+                if (['door_open', 'door_close', 'flashlight_on', 'flashlight_off', 'jumpscare_1'].includes(type)) {
+                    sound = sound.cloneNode();
+                }
+                sound.volume = masterVolume;
+                sound.play().catch(e => {
+                    playSynthFallback(type);
+                });
+                return;
+            }
+            playSynthFallback(type);
+        }
+
+        function playSynthFallback(type) {
+            const t = audioCtx.currentTime;
+            if (type === 'ui_blip') {
+                const noiseSource = audioCtx.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass'; filter.frequency.value = 400; 
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.5, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                noiseSource.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                noiseSource.start();
+            } 
+            else if (type === 'wood_step') {
+                const osc = audioCtx.createOscillator(); osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(50, t + 0.1);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.4, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.1);
+            }
+            else if (type === 'click') {
+                const osc = audioCtx.createOscillator(); osc.type = 'square';
+                osc.frequency.setValueAtTime(800, t);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.05);
+            }
+            else if (type === 'door') {
+                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, t); osc.frequency.linearRampToValueAtTime(60, t + 0.4);
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 800;
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.5, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.4);
+            }
+            else if (type === 'jumpscare') {
+                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(20, t + 1.5);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(); osc.stop(t + 1.5);
+            }
+            else if (type === 'thunder') {
+                const bufferSize = audioCtx.sampleRate * 3.0; 
+                const thunderBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const output = thunderBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+                const noiseSource = audioCtx.createBufferSource(); noiseSource.buffer = thunderBuffer;
+                
+                const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, t); filter.frequency.exponentialRampToValueAtTime(50, t + 3);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(1.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 3);
+                
+                noiseSource.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                noiseSource.start(t);
+            }
+            else if (type === 'typewriter') {
+                const osc = audioCtx.createOscillator(); osc.type = 'square';
+                osc.frequency.setValueAtTime(600 + Math.random() * 200, t); 
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.015, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.04);
+            }
+            else if (type === 'knock_synth') {
+                const osc = audioCtx.createOscillator(); osc.type = 'triangle';
+                osc.frequency.setValueAtTime(80, t);
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(1.5, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(t); osc.stop(t + 0.1);
+            }
+        }
+
+        function startAmbientSound() {
+            if (!audioCtx || isAmbientPlaying) return;
+            isAmbientPlaying = true;
+            if (sfx.ambient_bg && !isNightmare) { 
+                sfx.ambient_bg.volume = masterVolume;
+                sfx.ambient_bg.play().catch(e => console.log("Missing ambient_bg.mp3"));
+            }
+        }
+
+        const container = document.getElementById('game-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x060708); 
+        scene.fog = new THREE.FogExp2(0x060708, 0.05); 
+
+        fovSlider.addEventListener('input', (e) => {
+            if (camera) {
+                camera.fov = parseInt(e.target.value);
+                camera.updateProjectionMatrix();
+            }
+        });
+
+        const camera = new THREE.PerspectiveCamera(parseInt(fovSlider.value), window.innerWidth / window.innerHeight, 0.1, 2000); 
+        camera.position.set(0, 2, 45); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false });
+        const pixelRatio = 0.15; 
+        renderer.setSize(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio, false);
+        container.appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.08); 
+        scene.add(ambientLight);
+        
+        let sunLight;
+
+        const flashlight = new THREE.SpotLight(0xfffaee, 0); 
+        flashlight.position.set(0, 0, 0);
+        flashlight.target.position.set(0, 0, -1);
+        flashlight.angle = Math.PI / 7; 
+        flashlight.penumbra = 0.1; 
+        flashlight.distance = 50; 
+        flashlight.decay = 1.5; 
+        camera.add(flashlight);
+        camera.add(flashlight.target);
+        scene.add(camera);
+
+        function toggleFlashlight() {
+            if (flashlightDead) {
+                showSubtitle("lmao, the flashlight is dead", 3000);
+                return;
+            }
+            isFlashlightOn = !isFlashlightOn;
+            playSound(isFlashlightOn ? 'flashlight_on' : 'flashlight_off');
+            
+            const inHouse = (camera.position.z < -37 && Math.abs(camera.position.x) < 8);
+            flashlight.intensity = isFlashlightOn ? (inHouse ? 4 : 15) : 0; 
+            flashlight.distance = isFlashlightOn ? (inHouse ? 10 : 50) : 0;
+            flashlightBtn.classList.toggle('active', isFlashlightOn);
+            
+            if (isFlashlightOn) {
+                pathMat.emissive.setHex(0x2a1a10); 
+                pathMat.color.setHex(0x5c4033);
+            } else {
+                pathMat.emissive.setHex(0x000000);
+                pathMat.color.setHex(0x1f140d);
+            }
+        }
+
+        flashlightBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            if (controlsEnabled) toggleFlashlight();
+        });
+
+        function createWoodTexture(baseColor, stripeColor) {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = baseColor; ctx.fillRect(0, 0, 256, 256);
+            for(let i = 0; i < 200; i++) {
+                ctx.fillStyle = stripeColor; ctx.globalAlpha = Math.random() * 0.15;
+                ctx.fillRect(0, Math.random() * 256, 256, Math.random() * 4 + 1);
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+            return tex;
+        }
+
+        const woodWallTex = createWoodTexture('#3a2415', '#000000');
+        const woodFloorTex = createWoodTexture('#2a180c', '#000000');
+        const woodRoofTex = createWoodTexture('#1c1006', '#000000');
+
+        const floorGeo = new THREE.PlaneGeometry(300, 3500); 
+        const floorMat = new THREE.MeshLambertMaterial({ color: 0x050a05 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(0, 0, -300);
+        scene.add(floor);
+
+        const pathGeo = new THREE.PlaneGeometry(5, 3500); 
+        const pathMat = new THREE.MeshLambertMaterial({ color: 0x1f140d });
+        const path = new THREE.Mesh(pathGeo, pathMat);
+        path.rotation.x = -Math.PI / 2;
+        path.position.set(0, 0.02, -300); 
+        scene.add(path);
+
+        // --- STREAMING_CHUNK:Generating detailed multi-branch forest and high path density... ---
+        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x120c08 });
+        const branchMat = new THREE.MeshLambertMaterial({ color: 0x18100b });
+        const leavesMat = new THREE.MeshLambertMaterial({ color: 0x0a140a });
+        
+        const treeCount = 7000;
+        const validTrees = [];
+        for (let i = 0; i < treeCount; i++) {
+            let x;
+            const rand = Math.random();
+            if (rand < 0.65) {
+                // Tăng mật độ cây cực cao ngay sát lề đường path (từ 3.2 đến 18 đơn vị)
+                x = (Math.random() > 0.5 ? 1 : -1) * (3.2 + Math.random() * 15);
+            } else {
+                // Rừng sâu bên ngoài
+                x = (Math.random() - 0.5) * 220;
+            }
+            const z = (Math.random() * 3200) - 1700; 
+            if (Math.abs(x) < 5.2 && z < 100 && z > -1050) continue; 
+            if (Math.abs(x) < 12 && z < -35 && z > -55) continue; 
+            const h = 6 + Math.random() * 8;
+            validTrees.push({ x, z, h });
+        }
+
+        const trunkGeo = new THREE.BoxGeometry(1.2, 1, 1.2);
+        const branchGeo1 = new THREE.BoxGeometry(2.5, 0.4, 0.4);
+        const branchGeo2 = new THREE.BoxGeometry(0.4, 0.4, 2.5);
+        const leavesGeo = new THREE.BoxGeometry(4.8, 5.5, 4.8);
+
+        const trunkInst = new THREE.InstancedMesh(trunkGeo, trunkMat, validTrees.length);
+        const branchInst1 = new THREE.InstancedMesh(branchGeo1, branchMat, validTrees.length);
+        const branchInst2 = new THREE.InstancedMesh(branchGeo2, branchMat, validTrees.length);
+        const leavesInst = new THREE.InstancedMesh(leavesGeo, leavesMat, validTrees.length);
+
+        const dummy = new THREE.Object3D();
+        for (let i = 0; i < validTrees.length; i++) {
+            const t = validTrees[i];
+            
+            // Thân chính
+            dummy.position.set(t.x, t.h / 2, t.z);
+            dummy.scale.set(1, t.h, 1);
+            dummy.updateMatrix();
+            trunkInst.setMatrixAt(i, dummy.matrix);
+
+            // Cành trái/phải chĩa ra tăng độ rậm rạp
+            dummy.position.set(t.x + 0.6, t.h * 0.65, t.z);
+            dummy.scale.set(1, 1, 1);
+            dummy.updateMatrix();
+            branchInst1.setMatrixAt(i, dummy.matrix);
+
+            // Cành trước/sau
+            dummy.position.set(t.x, t.h * 0.45, t.z + 0.6);
+            dummy.scale.set(1, 1, 1);
+            dummy.updateMatrix();
+            branchInst2.setMatrixAt(i, dummy.matrix);
+
+            // Tán lá
+            dummy.position.set(t.x, t.h + 1, t.z);
+            dummy.scale.set(1, 1, 1);
+            dummy.updateMatrix();
+            leavesInst.setMatrixAt(i, dummy.matrix);
+        }
+        trunkInst.instanceMatrix.needsUpdate = true;
+        branchInst1.instanceMatrix.needsUpdate = true;
+        branchInst2.instanceMatrix.needsUpdate = true;
+        leavesInst.instanceMatrix.needsUpdate = true;
+        scene.add(trunkInst);
+        scene.add(branchInst1);
+        scene.add(branchInst2);
+        scene.add(leavesInst);
+
+        const rainCount = 20000;
+        const rainGeo = new THREE.BufferGeometry();
+        const rainPositions = new Float32Array(rainCount * 3);
+        for(let i = 0; i < rainCount; i++) {
+            rainPositions[i*3] = (Math.random() - 0.5) * 80;     
+            rainPositions[i*3+1] = Math.random() * 40;           
+            rainPositions[i*3+2] = (Math.random() - 0.5) * 800 - 300;  
+        }
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+        const rainMat = new THREE.PointsMaterial({
+            color: 0x888888,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.5
+        });
+        const rainDrop = new THREE.Points(rainGeo, rainMat);
+        rainDrop.visible = false;
+        scene.add(rainDrop);
+
+        const bloodGroup = new THREE.Group();
+        scene.add(bloodGroup);
+
+        const houseGroup = new THREE.Group();
+        houseGroup.position.set(0, 0, -45);
+        scene.add(houseGroup);
+
+        const interactables = []; 
+
+        const houseLight = new THREE.PointLight(0xffddaa, 0, 20);
+        houseLight.position.set(0, 5, 0);
+        houseGroup.add(houseLight);
+
+        const matWall = new THREE.MeshLambertMaterial({ map: woodWallTex });
+        const w_W = 16, w_H = 8, w_D = 16;
+        
+        const lw = new THREE.Mesh(new THREE.BoxGeometry(1, w_H, w_D), matWall); lw.position.set(-8, 4, 0); houseGroup.add(lw);
+        const rw = new THREE.Mesh(new THREE.BoxGeometry(1, w_H, w_D), matWall); rw.position.set(8, 4, 0); houseGroup.add(rw);
+        const bw = new THREE.Mesh(new THREE.BoxGeometry(w_W, w_H, 1), matWall); bw.position.set(0, 4, -8); houseGroup.add(bw);
+        const fwLeft = new THREE.Mesh(new THREE.BoxGeometry(6, w_H, 1), matWall); fwLeft.position.set(-5, 4, 8); houseGroup.add(fwLeft);
+        const fwRight = new THREE.Mesh(new THREE.BoxGeometry(6, w_H, 1), matWall); fwRight.position.set(5, 4, 8); houseGroup.add(fwRight);
+        const fwTop = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 1), matWall); fwTop.position.set(0, 7, 8); houseGroup.add(fwTop);
+
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(18, 1, 18), new THREE.MeshLambertMaterial({map: woodRoofTex}));
+        roof.position.set(0, w_H + 0.5, 0); houseGroup.add(roof);
+        const woodFloor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshLambertMaterial({map: woodFloorTex}));
+        woodFloor.rotation.x = -Math.PI / 2; woodFloor.position.set(0, 0.05, 0); houseGroup.add(woodFloor);
+
+        function createDecorativeWindow() {
+            const winGroup = new THREE.Group();
+            const frameWoodMat = new THREE.MeshLambertMaterial({ color: 0x221208 });
+            const glassPaneMat = new THREE.MeshLambertMaterial({ 
+                color: 0x1a2b3c, 
+                transparent: true, 
+                opacity: 0.65,
+                emissive: 0x0a1520,
+                emissiveIntensity: 0.3
+            });
+
+            const fW = 3.2, fH = 2.4, fT = 0.15, fD = 0.25;
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(fW, fT, fD), frameWoodMat); topBar.position.y = fH/2; winGroup.add(topBar);
+            const botBar = new THREE.Mesh(new THREE.BoxGeometry(fW, fT, fD), frameWoodMat); botBar.position.y = -fH/2; winGroup.add(botBar);
+            const leftBar = new THREE.Mesh(new THREE.BoxGeometry(fT, fH, fD), frameWoodMat); leftBar.position.x = -fW/2; winGroup.add(leftBar);
+            const rightBar = new THREE.Mesh(new THREE.BoxGeometry(fT, fH, fD), frameWoodMat); rightBar.position.x = fW/2; winGroup.add(rightBar);
+
+            const crossHoriz = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.08, 0.12), frameWoodMat); winGroup.add(crossHoriz);
+            const crossVert = new THREE.Mesh(new THREE.BoxGeometry(0.08, fH, 0.12), frameWoodMat); winGroup.add(crossVert);
+
+            const glass = new THREE.Mesh(new THREE.PlaneGeometry(fW - 0.1, fH - 0.1), glassPaneMat);
+            winGroup.add(glass);
+
+            return winGroup;
+        }
+
+        const windowRight = createDecorativeWindow();
+        windowRight.position.set(7.45, 4.5, 0);
+        windowRight.rotation.y = -Math.PI / 2;
+        houseGroup.add(windowRight);
+
+        const windowLeft = createDecorativeWindow();
+        windowLeft.position.set(-7.45, 4.5, 0);
+        windowLeft.rotation.y = Math.PI / 2;
+        houseGroup.add(windowLeft);
+
+        const doorPivot = new THREE.Group(); doorPivot.position.set(-2, 0, 8); houseGroup.add(doorPivot);
+        const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.4), new THREE.MeshLambertMaterial({color: 0x4a2a10}));
+        doorMesh.position.set(2, 3, 0); doorMesh.userData = { type: 'door', isOpen: false }; doorPivot.add(doorMesh); interactables.push(doorMesh);
+
+        const bedGroup = new THREE.Group();
+        bedGroup.position.set(-5, 0, -4);
+
+        const frameMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+        const bedBase = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.6, 7.2), frameMat);
+        bedBase.position.y = 0.3; bedGroup.add(bedBase);
+
+        const headboard = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.2, 0.4), frameMat);
+        headboard.position.set(0, 1.1, -3.4); bedGroup.add(headboard);
+
+        const footboard = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.0, 0.4), frameMat);
+        footboard.position.set(0, 0.5, 3.4); bedGroup.add(footboard);
+
+        const mattressMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+        const mattress = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.6, 6.6), mattressMat);
+        mattress.position.set(0, 0.8, 0); bedGroup.add(mattress);
+
+        const blanketMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
+        const blanket = new THREE.Mesh(new THREE.BoxGeometry(4.25, 0.65, 4.4), blanketMat);
+        blanket.position.set(0, 0.82, 1.0); bedGroup.add(blanket);
+
+        const trimMat = new THREE.MeshLambertMaterial({ color: 0xd97706 });
+        const trim = new THREE.Mesh(new THREE.BoxGeometry(4.26, 0.66, 0.3), trimMat);
+        trim.position.set(0, 0.82, -1.1); bedGroup.add(trim);
+
+        const pillowMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+        const pillow1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 1.2), pillowMat);
+        pillow1.position.set(0, 1.2, -2.5); pillow1.rotation.x = 0.15; bedGroup.add(pillow1);
+
+        const bedHitbox = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.2, 7.2), new THREE.MeshBasicMaterial({ visible: false }));
+        bedHitbox.position.set(0, 1.1, 0);
+        bedHitbox.userData = { type: 'bed' };
+        bedGroup.add(bedHitbox);
+
+        houseGroup.add(bedGroup);
+        interactables.push(bedHitbox);
+
+        const nightstandGroup = new THREE.Group();
+        nightstandGroup.position.set(-2.0, 0, -6.5);
+
+        const nightstandWoodMat = new THREE.MeshLambertMaterial({ color: 0x2e1c11 });
+        const drawerHandleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+
+        const legGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12);
+        const leg1 = new THREE.Mesh(legGeo, nightstandWoodMat); leg1.position.set(-0.6, 0.25, -0.6); nightstandGroup.add(leg1);
+        const leg2 = new THREE.Mesh(legGeo, nightstandWoodMat); leg2.position.set(0.6, 0.25, -0.6); nightstandGroup.add(leg2);
+        const leg3 = new THREE.Mesh(legGeo, nightstandWoodMat); leg3.position.set(-0.6, 0.25, 0.6); nightstandGroup.add(leg3);
+        const leg4 = new THREE.Mesh(legGeo, nightstandWoodMat); leg4.position.set(0.6, 0.25, 0.6); nightstandGroup.add(leg4);
+
+        const cabinetBody = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 1.4), nightstandWoodMat);
+        cabinetBody.position.set(0, 0.95, 0);
+        nightstandGroup.add(cabinetBody);
+
+        const tableTopSurface = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.08, 1.55), nightstandWoodMat);
+        tableTopSurface.position.set(0, 1.44, 0);
+        nightstandGroup.add(tableTopSurface);
+
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.1), drawerHandleMat);
+        handle.position.set(0, 0.95, 0.73);
+        nightstandGroup.add(handle);
+
+        houseGroup.add(nightstandGroup);
+
+        const clockCanvas = document.createElement('canvas');
+        clockCanvas.width = 256; clockCanvas.height = 128;
+        const clockCtx = clockCanvas.getContext('2d');
+        const clockTex = new THREE.CanvasTexture(clockCanvas);
+        clockTex.minFilter = THREE.LinearFilter;
+        clockTex.magFilter = THREE.LinearFilter;
+
+        function updateClockTime(timeStr) {
+            clockCtx.fillStyle = '#000000';
+            clockCtx.fillRect(0, 0, 256, 128);
+            clockCtx.fillStyle = '#ff0000';
+            clockCtx.font = 'bold 50px "Courier New"';
+            clockCtx.textAlign = 'center';
+            clockCtx.textBaseline = 'middle';
+            clockCtx.shadowColor = '#ff0000';
+            clockCtx.shadowBlur = 10;
+            clockCtx.fillText(timeStr, 128, 64);
+            clockTex.needsUpdate = true;
+        }
+
+        updateClockTime("9:00 PM");
+
+        const clockBodyMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const clockFaceMat = new THREE.MeshBasicMaterial({ map: clockTex });
+        
+        const clockGroup = new THREE.Group();
+        const clockBody = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.45, 0.28), clockBodyMat);
+        const clockFace = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.36), clockFaceMat);
+        clockFace.position.set(0, 0, 0.15);
+        clockGroup.add(clockBody);
+        clockGroup.add(clockFace);
+        
+        clockGroup.position.set(-2.0, 1.71, -6.5);
+        clockGroup.rotation.x = -0.15;
+        clockGroup.rotation.y = Math.PI / 6;
+        houseGroup.add(clockGroup);
+
+        const table = new THREE.Mesh(new THREE.BoxGeometry(5, 1.5, 2.5), new THREE.MeshLambertMaterial({color: 0x3e2723}));
+        table.position.set(4, 0.75, -6); 
+        houseGroup.add(table);
+        
+        const tvCasingMat = new THREE.MeshLambertMaterial({color: 0x4a3b2c}); 
+        const tvScreenMat = new THREE.MeshLambertMaterial({color: 0x1a2b2c, emissive: 0x050a0a}); 
+        const tvDetailsMat = new THREE.MeshLambertMaterial({color: 0x111111}); 
+        
+        const tv = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 1.6), tvCasingMat);
+        tv.position.set(4, 2.4, -6.2); 
+        tv.userData = { type: 'tv' }; 
+        houseGroup.add(tv); 
+        interactables.push(tv);
+        
+        const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 0.2), tvScreenMat);
+        tvScreen.position.set(-0.2, 0, 0.8);
+        tv.add(tvScreen);
+        
+        const tvPanel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 0.1), tvDetailsMat);
+        tvPanel.position.set(0.9, 0, 0.8);
+        tv.add(tvPanel);
+        
+        const knobGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.15, 16);
+        knobGeo.rotateX(Math.PI / 2);
+        const knob1 = new THREE.Mesh(knobGeo, tvDetailsMat);
+        knob1.position.set(0.9, 0.3, 0.85);
+        tv.add(knob1);
+        const knob2 = new THREE.Mesh(knobGeo, tvDetailsMat);
+        knob2.position.set(0.9, -0.3, 0.85);
+        tv.add(knob2);
+        
+        const antennaBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.4), tvDetailsMat);
+        antennaBase.position.set(0, 0.95, 0);
+        tv.add(antennaBase);
+        const antennaRodGeo = new THREE.CylinderGeometry(0.02, 0.02, 1.2, 8);
+        const ant1 = new THREE.Mesh(antennaRodGeo, new THREE.MeshLambertMaterial({color: 0x888888}));
+        ant1.position.set(-0.3, 1.4, 0);
+        ant1.rotation.z = Math.PI / 6;
+        tv.add(ant1);
+        const ant2 = new THREE.Mesh(antennaRodGeo, new THREE.MeshLambertMaterial({color: 0x888888}));
+        ant2.position.set(0.3, 1.4, 0);
+        ant2.rotation.z = -Math.PI / 6;
+        tv.add(ant2);
+
+        const chairGroup = new THREE.Group();
+        const chairWoodMat = new THREE.MeshLambertMaterial({ color: 0x2d1b0e });
+
+        const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 1.3), chairWoodMat);
+        chairSeat.position.y = 1.1;
+        chairGroup.add(chairSeat);
+
+        const chairLegGeo = new THREE.BoxGeometry(0.12, 1.1, 0.12);
+        const legFL = new THREE.Mesh(chairLegGeo, chairWoodMat); legFL.position.set(-0.55, 0.55, 0.55); chairGroup.add(legFL);
+        const legFR = new THREE.Mesh(chairLegGeo, chairWoodMat); legFR.position.set(0.55, 0.55, 0.55); chairGroup.add(legFR);
+        const legBL = new THREE.Mesh(chairLegGeo, chairWoodMat); legBL.position.set(-0.55, 0.55, -0.55); chairGroup.add(legBL);
+        const legBR = new THREE.Mesh(chairLegGeo, chairWoodMat); legBR.position.set(0.55, 0.55, -0.55); chairGroup.add(legBR);
+
+        const backPostGeo = new THREE.BoxGeometry(0.12, 1.3, 0.12);
+        const backPostL = new THREE.Mesh(backPostGeo, chairWoodMat); backPostL.position.set(-0.55, 1.75, -0.55); chairGroup.add(backPostL);
+        const backPostR = new THREE.Mesh(backPostGeo, chairWoodMat); backPostR.position.set(0.55, 1.75, -0.55); chairGroup.add(backPostR);
+
+        const backTopBar = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.35, 0.08), chairWoodMat);
+        backTopBar.position.set(0, 2.2, -0.55);
+        chairGroup.add(backTopBar);
+
+        const slatGeo = new THREE.BoxGeometry(0.08, 0.85, 0.05);
+        for (let s = -0.35; s <= 0.35; s += 0.35) {
+            const slat = new THREE.Mesh(slatGeo, chairWoodMat);
+            slat.position.set(s, 1.65, -0.55);
+            chairGroup.add(slat);
+        }
+
+        chairGroup.position.set(5.5, 0, 4);
+        chairGroup.rotation.y = -Math.PI / 4; 
+        houseGroup.add(chairGroup);
+
+        const switchMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa, emissive: 0x0055ff, emissiveIntensity: 1 });
+        const switchBtn = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.1), switchMat);
+        switchBtn.position.set(2.5, 4, 7.4); switchBtn.userData = { type: 'switch', isOn: false };
+        houseGroup.add(switchBtn); interactables.push(switchBtn);
+
+        const roadRabbitGroup = new THREE.Group();
+        const roadRMat = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
+
+        const rBody2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.9), roadRMat); rBody2.position.y = 0.25; roadRabbitGroup.add(rBody2);
+        const rHead2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), roadRMat); rHead2.position.set(0, 0.55, 0.35); roadRabbitGroup.add(rHead2);
+        const rEar1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.12), roadRMat); rEar1.position.set(-0.12, 0.95, 0.3); rEar1.rotation.z = -0.1; roadRabbitGroup.add(rEar1);
+        const rEar2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.12), roadRMat); rEar2.position.set(0.12, 0.95, 0.3); rEar2.rotation.z = 0.1; roadRabbitGroup.add(rEar2);
+
+        const roadEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const rEye1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.05), roadEyeMat); rEye1.position.set(-0.12, 0.6, 0.58); roadRabbitGroup.add(rEye1);
+        const rEye2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.05), roadEyeMat); rEye2.position.set(0.12, 0.6, 0.58); roadRabbitGroup.add(rEye2);
+
+        const rNose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.05), new THREE.MeshBasicMaterial({ color: 0xffaacc })); rNose.position.set(0, 0.5, 0.58); roadRabbitGroup.add(rNose);
+
+        roadRabbitGroup.position.set(12, 0, -18);
+        roadRabbitGroup.rotation.y = -Math.PI / 2; 
+        roadRabbitGroup.visible = false; 
+        scene.add(roadRabbitGroup);
+
+        const rabbitGroup = new THREE.Group();
+        const rMat = new THREE.MeshLambertMaterial({ color: 0xcccccc }); 
+        const rBody = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), rMat); rBody.position.y = 0.5; rabbitGroup.add(rBody);
+        const rHead = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), rMat); rHead.position.set(0, 1.2, 0.8); rabbitGroup.add(rHead);
+        const ear1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear1.position.set(-0.2, 1.8, 0.8); rabbitGroup.add(ear1);
+        const ear2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear2.position.set(0.2, 1.8, 0.8); rabbitGroup.add(ear2);
+        
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye1.position.set(-0.2, 1.3, 1.25); rabbitGroup.add(eye1);
+        const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye2.position.set(0.2, 1.3, 1.25); rabbitGroup.add(eye2);
+
+        const noseMat = new THREE.MeshBasicMaterial({ color: 0xffaacc });
+        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.1), noseMat); nose.position.set(0, 1.1, 1.25); rabbitGroup.add(nose);
+        const mouthMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), mouthMat); mouth.position.set(0, 0.95, 1.25); rabbitGroup.add(mouth);
+
+        const rabbitLight = new THREE.PointLight(0xffffff, 0, 10);
+        rabbitLight.position.set(0, 1.2, 2.5); 
+        rabbitGroup.add(rabbitLight);
+
+        rabbitGroup.position.set(0, -10, 0); 
+        rabbitGroup.scale.set(0.6, 0.6, 0.6); 
+        scene.add(rabbitGroup);
+
+        let controlsEnabled = false;
+        let isFrozen = false; 
+        const moveSpeed = 6;
+        
+        let keys = { w: false, a: false, s: false, d: false };
+        let pitch = 0; let yaw = 0;
+
+        document.getElementById('btn-play').addEventListener('click', () => {
+            initAudio();
+            playSound('thunder'); 
+            startAmbientSound(); 
+
+            uiElems.main.classList.add('hidden');
+            uiElems.hud.classList.remove('hidden');
+            document.body.requestPointerLock();
+            
+            showRabbitHand();
+
+            setTimeout(() => {
+                const instructionsPanel = document.getElementById('instructions');
+                if (instructionsPanel) instructionsPanel.style.opacity = '0';
+            }, 10000);
+
+            setTimeout(async () => {
+                await showSubtitle("What a hard day of work, I should go home!", 3000);
+                showSubtitle("My woodenhouse is at the end of this path", 3000);
+            }, 1000);
+        });
+
+        container.addEventListener('click', () => {
+            if (uiElems.main.classList.contains('hidden') && 
+                uiElems.pause.classList.contains('hidden') && 
+                uiElems.settings.classList.contains('hidden') && 
+                uiElems.credit.classList.contains('hidden') && 
+                uiElems.donate.classList.contains('hidden') && 
+                !isFrozen && !isFinalJumpscare) {
+                if (document.pointerLockElement !== document.body) {
+                    document.body.requestPointerLock();
+                }
+            }
+        });
+
+        let typingInterval;
+        let hideTimeout;
+        const TYPE_SPEED = 40; 
+
+        function showSubtitle(text, duration = 3000) {
+            return new Promise((resolve) => {
+                clearInterval(typingInterval);
+                clearTimeout(hideTimeout);
+                
+                uiElems.subtitle.textContent = ""; 
+                uiElems.subtitle.style.opacity = 1;
+                
+                let i = 0;
+                typingInterval = setInterval(() => {
+                    if (i < text.length) {
+                        uiElems.subtitle.textContent += text.charAt(i);
+                        if (text.charAt(i) !== ' ' && text.charAt(i) !== '\u00A0') playSound('typewriter');
+                        i++;
+                    } else {
+                        clearInterval(typingInterval);
+                        if (duration > 0) {
+                            hideTimeout = setTimeout(() => {
+                                hideSubtitle();
+                                resolve();
+                            }, duration);
+                        } else {
+                            resolve();
+                        }
+                    }
+                }, TYPE_SPEED);
+            });
+        }
+        function hideSubtitle() { uiElems.subtitle.style.opacity = 0; }
+
+        document.addEventListener('pointerlockchange', () => {
+            controlsEnabled = (document.pointerLockElement === document.body);
+            if (!controlsEnabled && 
+                uiElems.main.classList.contains('hidden') && 
+                uiElems.settings.classList.contains('hidden') && 
+                uiElems.credit.classList.contains('hidden') && 
+                uiElems.donate.classList.contains('hidden') && 
+                uiElems.fade.style.pointerEvents !== 'auto' && 
+                !isFinalJumpscare) {
+                
+                uiElems.pause.classList.remove('hidden');
+                uiElems.ingameMenuBtn.classList.add('hidden');
+                isPaused = true;
+                if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+                if (isAmbientPlaying) sfx.ambient_bg.pause();
+                if (isFinalJumpscare) sfx.jumpscare_final.pause();
+                if (sfx.rain && !sfx.rain.paused) sfx.rain.pause();
+                if (isNightmare && sfx.knock && !sfx.knock.paused) sfx.knock.pause();
+                if (isNightmare && sfx.music_3am && !sfx.music_3am.paused) sfx.music_3am.pause();
+            } else if (controlsEnabled) {
+                uiElems.pause.classList.add('hidden');
+                uiElems.settings.classList.add('hidden');
+                uiElems.ingameMenuBtn.classList.remove('hidden');
+                isPaused = false;
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+                if (isFinalJumpscare) sfx.jumpscare_final.play().catch(()=>{});
+                if (isNightmare && sfx.knock && sfx.knock.paused && !nightmareDoorOpened) sfx.knock.play().catch(()=>{});
+                
+                if (isNightmare && !isNightmareChase) {
+                    if (sfx.music_3am && sfx.music_3am.paused) sfx.music_3am.play().catch(()=>{});
+                } else if (!isNightmare) {
+                    if (isAmbientPlaying) sfx.ambient_bg.play().catch(()=>{});
+                }
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!controlsEnabled || isFrozen) return;
+            yaw -= (e.movementX || 0) * 0.002; pitch -= (e.movementY || 0) * 0.002;
+            pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch));
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape') {
+                if (!uiElems.main.classList.contains('hidden')) return;
+                if (!uiElems.settings.classList.contains('hidden')) {
+                    uiElems.settings.classList.add('hidden');
+                    uiElems.pause.classList.remove('hidden');
+                    return;
+                }
+                if (document.pointerLockElement === document.body) {
+                    document.exitPointerLock();
+                } else if (!uiElems.pause.classList.contains('hidden')) {
+                    uiElems.pause.classList.add('hidden');
+                    document.body.requestPointerLock();
+                }
+            }
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = true;
+            if(e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = true;
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = true;
+            if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = true;
+            if(e.code === 'Digit1' && controlsEnabled && !isFrozen) toggleFlashlight();
+        });
+        document.addEventListener('keyup', (e) => {
+            if(e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false;
+            if(e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false;
+            if(e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false;
+            if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false;
+        });
+
+        function triggerWakeUp(fromNightmare = false) {
+            uiElems.endText.classList.remove('blinking');
+            uiElems.endText.textContent = "";
+            hideSubtitle(); 
+            
+            scene.background.setHex(0x87CEEB); 
+            scene.fog.color.setHex(0x87CEEB);
+            scene.fog.density = 0.025; 
+            
+            if (!sunLight) {
+                sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                sunLight.position.set(10, 20, 10);
+                scene.add(sunLight);
+            }
+            sunLight.intensity = 1.2;
+            ambientLight.intensity = 0.5;
+            
+            flashlightDead = false; 
+            isDaytime = true;
+            
+            updateClockTime("5:00 AM");
+
+            if (isFlashlightOn) toggleFlashlight(); 
+            
+            startEyeWakeUp();
+            uiElems.fade.style.opacity = 0; 
+            
+            if (fromNightmare && isAmbientPlaying && sfx.ambient_bg.paused) {
+                sfx.ambient_bg.currentTime = 0;
+                sfx.ambient_bg.play().catch(()=>{});
+            }
+
+            setTimeout(async () => { 
+                isFrozen = false; 
+                if (fromNightmare) {
+                    await showSubtitle("OH my fucking god, It was just a nightmare!", 3500);
+                }
+                await showSubtitle("It's morning now, I have some more work to do!", 3000);
+                showSubtitle("I need to get out and walk on the path to go there!", 4000);
+            }, 3000); 
+        }
+
+        function triggerNightmare() {
+            isNightmare = true;
+            flashlightDead = false; 
+            hasSeenBloodInNightmare = false;
+            isNightmareChase = false;
+            uiElems.endText.classList.remove('blinking');
+            uiElems.endText.textContent = "";
+            
+            updateClockTime("3:00 AM");
+            
+            camera.position.set(-4, 2.5, -45); 
+            pitch = 0; yaw = 0; 
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+
+            if (sfx.ambient_bg && !sfx.ambient_bg.paused) {
+                sfx.ambient_bg.pause();
+            }
+            if (sfx.music_3am) {
+                sfx.music_3am.volume = masterVolume;
+                sfx.music_3am.currentTime = 0;
+                sfx.music_3am.play().catch(e => console.log("Missing 3AM.mp3"));
+            }
+
+            if (sfx.knock) {
+                sfx.knock.volume = masterVolume;
+                sfx.knock.play().catch(e => {
+                    knockingInterval = setInterval(() => playSound('knock_synth'), 400);
+                });
+            }
+
+            uiElems.fade.style.opacity = 0;
+            startEyeWakeUp();
+
+            setTimeout(() => { 
+                isFrozen = false; 
+                showSubtitle("Who the fuck knocking my door at 3AM? I have to check that nigga out!", 4000);
+            }, 2000);
+        }
+
+        function generateBloodPath() {
+            const bloodMat = new THREE.MeshLambertMaterial({ 
+                color: 0x660000, 
+                transparent: true, 
+                opacity: 0.85 
+            });
+            for (let i = 0; i < 40; i++) {
+                const size = 0.2 + Math.random() * 0.4;
+                const drop = new THREE.Mesh(new THREE.CylinderGeometry(size, size, 0.05, 16), bloodMat);
+                
+                const zPos = -34 + (i * 0.9) + (Math.random() - 0.5); 
+                const xPos = (Math.random() - 0.5) * 3; 
+                
+                drop.position.set(xPos, 0.05, zPos);
+                bloodGroup.add(drop);
+            }
+        }
+
+        function triggerNightmareChaseSequence() {
+            isFrozen = true;
+            isNightmareChase = true;
+            
+            if (sfx.music_3am) sfx.music_3am.pause();
+
+            rabbitGroup.scale.set(2.2, 3.5, 2.2); 
+            rabbitGroup.position.set(camera.position.x, 0.5, camera.position.z + 55);
+            rabbitGroup.rotation.set(0, Math.PI, 0); 
+            
+            rabbitLight.position.set(0, 1.5, 2.5); 
+            rabbitLight.intensity = 15;
+        }
+
+        function resetToNightTime() {
+            scene.background.setHex(0x060708);
+            scene.fog.color.setHex(0x060708);
+            scene.fog.density = 0.05;
+            if (sunLight) sunLight.intensity = 0;
+            ambientLight.intensity = 0.08;
+            
+            isDaytime = false;
+            hasEnteredHouse = false;
+            hasTurnedOnLight = false;
+            hasScared = false; 
+            morningTextTriggered = false; 
+            currentCycle++; 
+
+            if (currentCycle === 2) {
+                houseGroup.visible = false;
+                hideRabbitHand(); 
+            }
+            
+            switchBtn.userData.isOn = false;
+            switchBtn.material.color.setHex(0xaaaaaa);
+            switchBtn.material.emissive.setHex(0x0055ff);
+            houseLight.intensity = 0;
+            
+            doorMesh.userData.isOpen = false;
+            doorPivot.rotation.y = 0;
+            
+            camera.position.set(0, 2, 45);
+            pitch = 0; yaw = 0;
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+            
+            uiElems.fade.style.opacity = 0;
+            setTimeout(() => { isFrozen = false; }, 3000);
+        }
+
+        const raycaster = new THREE.Raycaster();
+        document.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && controlsEnabled && !isFrozen) {
+                
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(interactables);
+                
+                if (currentCycle !== 2 && intersects.length > 0 && intersects[0].distance < 6) {
+                    const obj = intersects[0].object;
+                    const type = obj.userData.type;
+
+                    if (isDaytime && type !== 'door') return;
+                    if (isNightmare && type !== 'door') return; 
+
+                    if (type === 'door') {
+                        if (isNightmare) {
+                            if (!nightmareDoorOpened) {
+                                nightmareDoorOpened = true;
+                                if (sfx.knock) sfx.knock.pause();
+                                if (knockingInterval) clearInterval(knockingInterval);
+                                
+                                obj.userData.isOpen = true;
+                                playSound('door_open');
+                                doorPivot.rotation.y = Math.PI / 2;
+                                
+                                generateBloodPath();
+                            }
+                        }
+                        else if (!isDaytime && hasEnteredHouse) {
+                            playSound('door_close'); 
+                            showSubtitle("I locked the door, no need to get out at night!.", 3000);
+                            return;
+                        } else {
+                            obj.userData.isOpen = !obj.userData.isOpen;
+                            playSound(obj.userData.isOpen ? 'door_open' : 'door_close');
+                            doorPivot.rotation.y = obj.userData.isOpen ? Math.PI / 2 : 0; 
+                        }
+                    } 
+                    else if (type === 'switch') {
+                        playSound('click');
+                        obj.userData.isOn = true; 
+                        hasTurnedOnLight = true;
+                        houseLight.intensity = 1.2;
+                        obj.material.color.setHex(0x00ff00);
+                        obj.material.emissive.setHex(0x000000); 
+
+                        if (currentCycle === 1) {
+                            showSubtitle("I'm tired, better get some sleep!", 0);
+                        }
+                    }
+                    else if (type === 'bed') {
+                        if (!hasTurnedOnLight) {
+                            showSubtitle("I need to find the light switch first...", 3000);
+                        } else {
+                            if (!isFrozen) { 
+                                isFrozen = true; 
+                                hideSubtitle(); 
+                                uiElems.fade.style.opacity = 1; 
+                                
+                                setTimeout(() => {
+                                    uiElems.endText.textContent = "Zzz...";
+                                    uiElems.endText.classList.add('blinking');
+                                    
+                                    setTimeout(() => {
+                                        if (currentCycle === 1 && !isNightmare && !isDaytime) {
+                                            triggerNightmare();
+                                        } else {
+                                            triggerWakeUp();
+                                        }
+                                    }, 5000);
+                                }, 3000); 
+                            }
+                        }
+                    }
+                    else if (type === 'tv') {
+                        playSound('click'); 
+                        showSubtitle("I don't wanna use the tv rightnow", 3000);
+                    }
+                }
+            }
+        });
+
+        function triggerJumpscare() {
+            hasScared = true; 
+            isFrozen = true;
+
+            if (roadRabbitGroup) {
+                roadRabbitGroup.visible = false;
+            }
+
+            cameraBasePos.copy(camera.position);
+
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const downVec = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
+            
+            rabbitGroup.position.copy(camera.position)
+                .add(dir.multiplyScalar(1.5))
+                .add(downVec.multiplyScalar(0.72)); 
+                
+            rabbitGroup.quaternion.copy(camera.quaternion);
+            
+            rabbitLight.position.set(0, 1.3, 2.5); rabbitLight.intensity = 6; 
+            shakeTimer = 3.0; 
+            document.body.classList.add('shaking'); 
+            playSound('jumpscare_1');
+
+            setTimeout(() => {
+                document.body.classList.remove('shaking'); 
+                rabbitGroup.position.y = -10; 
+                rabbitLight.intensity = 0; 
+                camera.position.copy(cameraBasePos);
+                isFrozen = false; 
+                showSubtitle("oh, just a stupid rabbit, really creeped me out!", 4000);
+            }, 3000);
+        }
+
+        function triggerFinalJumpscare() {
+            isFrozen = true;
+            isFinalJumpscare = true; 
+
+            if (isAmbientPlaying) {
+                sfx.ambient_bg.pause();
+                sfx.ambient_bg.currentTime = 0;
+                isAmbientPlaying = false;
+            }
+            if (sfx.path_steps && !sfx.path_steps.paused) sfx.path_steps.pause();
+            if (sfx.house_steps && !sfx.house_steps.paused) sfx.house_steps.pause();
+            if (sfx.rain && !sfx.rain.paused) sfx.rain.pause();
+            
+            hideRabbitHand();
+
+            scene.fog.density = 0;
+            rMat.emissive.setHex(0x444444);
+
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const downVec = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
+            
+            const SCALE = 6.5; 
+            rabbitGroup.scale.set(SCALE, SCALE, SCALE); 
+            
+            const dist = 1.25 * SCALE + 2.5;
+            
+            rabbitGroup.position.copy(camera.position)
+                .add(dir.multiplyScalar(dist))
+                .add(downVec.multiplyScalar(1.1 * SCALE));
+                
+            rabbitGroup.quaternion.copy(camera.quaternion);
+
+            finalScareBasePos.copy(rabbitGroup.position);
+            
+            rabbitLight.position.set(0, 1.5, 1.5); 
+            rabbitLight.intensity = 50; 
+            
+            document.body.classList.add('shaking'); 
+            playContinuousJumpscare();
+
+            setTimeout(() => {
+                uiElems.fade.style.pointerEvents = 'auto'; 
+                uiElems.fade.style.opacity = 1;
+                uiElems.fade.style.backgroundColor = 'rgba(30, 0, 0, 0.2)';
+                
+                uiElems.fade.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; z-index: 999; position: relative;">
+                        <span style="color:#ff0000; font-size:6rem; margin-bottom: 20px; text-shadow: 0 0 20px #ff0000, 4px 4px 0 #000; font-weight:bold; animation: fast-flicker 0.1s infinite;">GAME OVER</span>
+                        <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #f00; border: 4px solid #f00; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
+                    </div>
+                `;
+                
+                document.exitPointerLock();
+                const btnFinal = document.getElementById('btn-final-menu');
+                btnFinal.addEventListener('mouseover', (e) => {
+                    e.target.style.background = '#f00';
+                    e.target.style.color = '#000';
+                    e.target.style.boxShadow = '0 0 30px #f00';
+                });
+                btnFinal.addEventListener('mouseout', (e) => {
+                    e.target.style.background = 'rgba(0,0,0,0.8)';
+                    e.target.style.color = '#f00';
+                    e.target.style.boxShadow = 'none';
+                });
+                
+                btnFinal.addEventListener('click', () => {
+                    location.reload();
+                });
+            }, 1000); 
+        }
+
+        const clock = new THREE.Clock();
+        let lightningTimer = Math.random() * 2 + 0.5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            if (isPaused) {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if (eyeAnimState === 1) {
+                updateEyeAnimation(delta);
+            }
+
+            if (isNightmareChase) {
+                let targetYaw = Math.PI; 
+                let currentYaw = yaw % (Math.PI * 2);
+                if (currentYaw < 0) currentYaw += Math.PI * 2;
+                
+                let diff = targetYaw - currentYaw;
+                if (diff > Math.PI) diff -= Math.PI * 2;
+                if (diff < -Math.PI) diff += Math.PI * 2;
+
+                yaw += diff * 10 * delta; 
+                pitch += (0 - pitch) * 10 * delta;
+                camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+
+                const chaseSpeed = 35; 
+                rabbitGroup.position.z -= chaseSpeed * delta;
+                
+                const time = clock.elapsedTime;
+                rabbitGroup.position.y = 0.5 + Math.abs(Math.sin(time * 25)) * 1.5; 
+                rabbitGroup.rotation.z = Math.sin(time * 20) * 0.25; 
+                rabbitGroup.rotation.y = Math.PI + Math.sin(time * 35) * 0.15; 
+
+                if (rabbitGroup.position.z <= camera.position.z + 1.5) {
+                    isNightmareChase = false;
+                    
+                    rabbitGroup.position.y = -10;
+                    rabbitGroup.rotation.set(0, 0, 0);
+                    rabbitGroup.scale.set(0.6, 0.6, 0.6);
+                    rabbitLight.intensity = 0;
+                    
+                    isNightmare = false;
+                    nightmareDoorOpened = false;
+                    while(bloodGroup.children.length > 0) { 
+                        bloodGroup.remove(bloodGroup.children[0]); 
+                    }
+                    doorMesh.userData.isOpen = false;
+                    doorPivot.rotation.y = 0;
+                    
+                    camera.position.set(-4, 2.5, -45); 
+                    pitch = 0; yaw = 0;
+                    camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+                    
+                    triggerWakeUp(true); 
+                }
+            }
+
+            if (!isDaytime && currentCycle === 1 && !hasScared) {
+                if (roadRabbitState === 0 && camera.position.z < -10 && camera.position.z > -22) {
+                    roadRabbitState = 1;
+                    roadRabbitGroup.visible = true;
+                    playSound('wood_step'); 
+                }
+
+                if (roadRabbitState === 1) {
+                    roadRabbitTimer += delta;
+                    const jumpDuration = 0.8;
+                    const t = Math.min(roadRabbitTimer / jumpDuration, 1);
+                    
+                    roadRabbitGroup.position.x = THREE.MathUtils.lerp(12, 0, t);
+                    roadRabbitGroup.position.y = Math.sin(t * Math.PI) * 2; 
+
+                    roadRabbitGroup.lookAt(camera.position);
+
+                    if (t >= 1) {
+                        roadRabbitState = 2; 
+                        roadRabbitTimer = 0;
+                        roadRabbitGroup.position.y = 0;
+                        playSound('wood_step'); 
+                    }
+                } else if (roadRabbitState === 2) {
+                    roadRabbitTimer += delta;
+                    roadRabbitGroup.lookAt(camera.position); 
+                    
+                    if (roadRabbitTimer > 1.2) { 
+                        roadRabbitState = 3;
+                        triggerJumpscare(); 
+                    }
+                }
+            }
+
+            if (isFinalJumpscare) {
+                rabbitGroup.position.x = finalScareBasePos.x + (Math.random() - 0.5) * 0.3;
+                rabbitGroup.position.y = finalScareBasePos.y + (Math.random() - 0.5) * 0.3;
+                rabbitGroup.position.z = finalScareBasePos.z + (Math.random() - 0.5) * 0.3;
+                
+                const s = 6.5 + (Math.random() - 0.5) * 0.3;
+                rabbitGroup.scale.set(s, s, s);
+
+                rabbitLight.intensity = 40 + Math.random() * 30;
+                eyeMat.color.setHex(Math.random() > 0.3 ? 0xff0000 : 0x770000);
+            }
+
+            if (currentCycle === 2 && !isDaytime && !isPaused) {
+                if (sfx.rain && sfx.rain.paused && !isFinalJumpscare) {
+                    sfx.rain.volume = masterVolume;
+                    sfx.rain.play().catch(e => console.log("Missing rain.mp3"));
+                }
+                rainDrop.visible = true;
+                const pos = rainDrop.geometry.attributes.position.array;
+                for(let i = 1; i < rainCount * 3; i += 3) {
+                    pos[i] -= 30 * delta; 
+                    if (pos[i] < 0) pos[i] = 40; 
+                }
+                rainDrop.geometry.attributes.position.needsUpdate = true;
+
+                if (!isFinalJumpscare) {
+                    lightningTimer -= delta;
+                    if (lightningTimer <= 0) {
+                        scene.background.setHex(0xffffff);
+                        scene.fog.color.setHex(0xffffff);
+                        
+                        setTimeout(() => { scene.background.setHex(0x111111); scene.fog.color.setHex(0x111111); }, 50);
+                        setTimeout(() => { scene.background.setHex(0xffffff); scene.fog.color.setHex(0xffffff); }, 100);
+                        setTimeout(() => { scene.background.setHex(0x060708); scene.fog.color.setHex(0x060708); }, 150);
+                        
+                        playSound('thunder');
+                        lightningTimer = Math.random() * 5 + 3; 
+                    }
+                }
+            } else {
+                rainDrop.visible = false; 
+                if (sfx.rain && !sfx.rain.paused) { sfx.rain.pause(); }
+            }
+            
+            if (currentCycle !== 2 && !isDaytime && !controlsEnabled && uiElems.main.classList.contains('hidden') === false) {
+                lightningTimer -= delta;
+                if (lightningTimer <= 0) {
+                    scene.background.setHex(0xffffff);
+                    setTimeout(() => scene.background.setHex(0x111111), 50);
+                    setTimeout(() => scene.background.setHex(0xffffff), 100);
+                    setTimeout(() => scene.background.setHex(0x060708), 150);
+                    lightningTimer = Math.random() * 1.5 + 0.5; 
+                }
+            }
+
+            if (controlsEnabled && !isFrozen) {
+                
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+                const intersects = raycaster.intersectObjects(interactables);
+                
+                let isHoveringInteractable = false;
+                if (currentCycle !== 2 && intersects.length > 0 && intersects[0].distance < 6) {
+                    const type = intersects[0].object.userData.type;
+                    if (!isDaytime || type === 'door') {
+                        isHoveringInteractable = true;
+                    }
+                }
+
+                if (isHoveringInteractable) {
+                    uiElems.crosshair.classList.add('glow');
+                } else {
+                    uiElems.crosshair.classList.remove('glow');
+                }
+
+                const dir = new THREE.Vector3();
+                dir.z = Number(keys.w) - Number(keys.s);
+                dir.x = Number(keys.d) - Number(keys.a);
+                dir.normalize(); 
+
+                const isMoving = (keys.w || keys.a || keys.s || keys.d) && dir.length() > 0;
+                
+                if (isMoving) {
+                    const euler = new THREE.Euler(0, yaw, 0, 'YXZ');
+                    const moveVec = new THREE.Vector3(dir.x, 0, -dir.z).applyEuler(euler).normalize().multiplyScalar(moveSpeed * delta);
+                    
+                    let nextX = camera.position.x + moveVec.x;
+                    let nextZ = camera.position.z + moveVec.z;
+                    
+                    camera.position.x = nextX;
+                    camera.position.z = nextZ;
+
+                    const inHouseCurrent = (currentCycle !== 2 && camera.position.z < -37 && Math.abs(camera.position.x) < 8);
+                    const activeStep = inHouseCurrent ? sfx.house_steps : sfx.path_steps;
+                    const inactiveStep = inHouseCurrent ? sfx.path_steps : sfx.house_steps;
+
+                    if (!inactiveStep.paused) {
+                        inactiveStep.pause();
+                        inactiveStep.currentTime = 0;
+                    }
+
+                    if (activeStep.paused || activeStep.ended) {
+                        activeStep.volume = masterVolume;
+                        activeStep.play().catch(e => console.log("Missing step audio"));
+                    }
+
+                    if (currentCycle === 2 && !isDaytime) {
+                        finalCycleWalkTime += delta; 
+                        
+                        if (finalCycleWalkTime > 1.5 && !finalCycleFlags[0]) {
+                            showSubtitle("i finally done killing those rabbit!", 4000);
+                            showRabbitHand(); 
+                            finalCycleFlags[0] = true;
+                        }
+                        if (finalCycleWalkTime > 12 && !finalCycleFlags[1]) {
+                            showSubtitle("Everyday is just a repeat cycle, I'm such a loser!", 4000);
+                            finalCycleFlags[1] = true;
+                        }
+                        if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) {
+                            showSubtitle("WTF where is my house and why is the path so fuckin long???", 4000);
+                            finalCycleFlags[2] = true;
+                        }
+                        if (finalCycleWalkTime > 40 && !finalCycleFlags[3]) {
+                            finalCycleFlags[3] = true;
+                            triggerFinalJumpscare();
+                        }
+                    }
+                } else {
+                    if (sfx.house_steps && !sfx.house_steps.paused) {
+                        sfx.house_steps.pause();
+                        sfx.house_steps.currentTime = 0;
+                    }
+                    if (sfx.path_steps && !sfx.path_steps.paused) {
+                        sfx.path_steps.pause();
+                        sfx.path_steps.currentTime = 0;
+                    }
+                }
+
+                const inHouseCurrent = (camera.position.z < -37 && Math.abs(camera.position.x) < 8);
+                if (isFlashlightOn) {
+                    if (inHouseCurrent) {
+                        flashlight.distance = 10;
+                        flashlight.intensity = 4;
+                    } else {
+                        flashlight.distance = 50;
+                        flashlight.intensity = 15;
+                    }
+                }
+
+                if (isNightmare && nightmareDoorOpened && !hasSeenBloodInNightmare && camera.position.z > -37.0) {
+                    hasSeenBloodInNightmare = true;
+                    showSubtitle("blood?", 2500);
+                }
+
+                if (isNightmare && nightmareDoorOpened && camera.position.z > -15 && !isNightmareChase) {
+                    triggerNightmareChaseSequence();
+                }
+
+                if (isAmbientPlaying) {
+                    const targetVol = (inHouseCurrent && currentCycle !== 2) ? masterVolume * 0.1 : masterVolume; 
+                    sfx.ambient_bg.volume += (targetVol - sfx.ambient_bg.volume) * 0.05; 
+                }
+
+                camera.position.y = 2.5; 
+                
+                if (currentCycle !== 2 && camera.position.z > -36) { 
+                    let isOffPath = false;
+                    if (camera.position.x > 4.5) { camera.position.x = 4.5; isOffPath = true; }
+                    else if (camera.position.x < -4.5) { camera.position.x = -4.5; isOffPath = true; }
+                    
+                    if (isOffPath && !isDaytime && !isNightmare) showSubtitle("wrong way, i need to follow the path!", 2000);
+                } 
+                else if (currentCycle === 2) {
+                    if (camera.position.x > 4.5) { camera.position.x = 4.5; }
+                    else if (camera.position.x < -4.5) { camera.position.x = -4.5; }
+                }
+
+                if(camera.position.x > 90) camera.position.x = 90;
+                if(camera.position.x < -90) camera.position.x = -90;
+                
+                if (isDaytime && camera.position.z > 45) {
+                    if (!isFrozen) {
+                        isFrozen = true;
+                        uiElems.fade.style.opacity = 1;
+                        setTimeout(() => resetToNightTime(), 3000);
+                    }
+                } else if (!isDaytime && camera.position.z > 48) {
+                    camera.position.z = 48;
+                    showSubtitle("I shouldn't go back, I need to get home.", 2000);
+                }
+
+                if (isDaytime && camera.position.z > 0 && !morningTextTriggered) {
+                    morningTextTriggered = true;
+                    showSubtitle("weird, why won any bird chirping anymore in the last couple days", 4000);
+                }
+                
+                const isDoorOpen = doorMesh.userData.isOpen;
+                if (currentCycle !== 2 && camera.position.z < -35 && camera.position.z > -55 && Math.abs(camera.position.x) < 9) {
+                    
+                    if (!isDaytime && hasEnteredHouse && !isNightmare) {
+                        if (camera.position.z > -38.0) camera.position.z = -38.0;
+                    } else {
+                        if (camera.position.z < -36.5 && camera.position.z > -38.5) {
+                            if (Math.abs(camera.position.x) > 1.8) {
+                                camera.position.z = camera.position.z > -37.5 ? -36.5 : -38.5;
+                            } else if (!isDoorOpen) {
+                                camera.position.z = camera.position.z > -37.5 ? -36.5 : -38.5;
+                            }
+                        }
+                    }
+
+                    if (camera.position.z <= -37.5) {
+                        if (camera.position.x > 7.0) camera.position.x = 7.0;
+                        if (camera.position.x < -7.0) camera.position.x = -7.0;
+                        if (camera.position.z < -52.0) camera.position.z = -52.0;
+                    }
+
+                    if (camera.position.x > -7.5 && camera.position.x < -2.5 && camera.position.z > -53 && camera.position.z < -45) {
+                        const dRight = Math.abs(-2.5 - camera.position.x);
+                        const dFront = Math.abs(-45 - camera.position.z);
+                        if (dRight < dFront) camera.position.x = -2.5;
+                        else camera.position.z = -45;
+                    }
+
+                    if (camera.position.x > -3.2 && camera.position.x < -0.8 && camera.position.z > -52.5 && camera.position.z < -50.5) {
+                        const dRight = Math.abs(-0.8 - camera.position.x);
+                        const dFront = Math.abs(-50.5 - camera.position.z);
+                        if (dRight < dFront) camera.position.x = -0.8;
+                        else camera.position.z = -50.5;
+                    }
+
+                    if (camera.position.x > 1.0 && camera.position.x < 7.0 && camera.position.z > -53 && camera.position.z < -49.25) {
+                        const dLeft = Math.abs(camera.position.x - 1.0);
+                        const dRight = Math.abs(7.0 - camera.position.x);
+                        const dFront = Math.abs(camera.position.z - (-49.25));
+                        const min = Math.min(dLeft, dRight, dFront);
+                        if (min === dLeft) camera.position.x = 1.0;
+                        else if (min === dRight) camera.position.x = 7.0;
+                        else camera.position.z = -49.25;
+                    }
+
+                    if (camera.position.x > 4.0 && camera.position.x < 7.0 && camera.position.z > -42.5 && camera.position.z < -39.5) {
+                        const dLeft = Math.abs(camera.position.x - 4.0);
+                        const dBack = Math.abs(camera.position.z - (-42.5));
+                        if (dLeft < dBack) camera.position.x = 4.0;
+                        else camera.position.z = -42.5;
+                    }
+                }
+
+                if (currentCycle !== 2 && !hasEnteredHouse && camera.position.z < -38 && Math.abs(camera.position.x) < 5) {
+                    hasEnteredHouse = true;
+                    hideRabbitHand();
+
+                    if (doorMesh.userData.isOpen) {
+                        doorMesh.userData.isOpen = false;
+                        doorPivot.rotation.y = 0;
+                        playSound('door_close');
+                    }
+                    playSound('click'); 
+
+                    if (currentCycle === 1) { 
+                        if (isFlashlightOn) toggleFlashlight(); 
+                        flashlightDead = true; 
+                        showSubtitle("The door slammed shut and locked! I need to find the light button...", 4000);
+                    }
+                }
+            } else {
+                if (sfx.house_steps && !sfx.house_steps.paused) { sfx.house_steps.pause(); sfx.house_steps.currentTime = 0; }
+                if (sfx.path_steps && !sfx.path_steps.paused) { sfx.path_steps.pause(); sfx.path_steps.currentTime = 0; }
+            }
+
+            if (shakeTimer > 0) {
+                shakeTimer -= delta;
+                camera.position.x = cameraBasePos.x + (Math.random() - 0.5) * 0.2;
+                camera.position.y = cameraBasePos.y + (Math.random() - 0.5) * 0.2;
+                if (shakeTimer <= 0) {
+                    camera.position.copy(cameraBasePos);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio, false);
+        });
+
+        animate();
+
+    </script>
+</body>
+</html>
