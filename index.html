@@ -6,6 +6,8 @@
     <title>The Rabbit Experience</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap');
+        
         body, html {
             margin: 0;
             padding: 0;
@@ -50,6 +52,32 @@
             opacity: 0.6;
         }
 
+        /* --- HIỆU ỨNG NHIỄU TV (TV STATIC NOISE) --- */
+        #noise-overlay {
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            pointer-events: none;
+            background: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            animation: tv-noise 0.12s infinite;
+            opacity: 0.12; 
+            z-index: 30; /* Nằm trên cùng để bao phủ cả màn hình chơi */
+            mix-blend-mode: overlay;
+        }
+
+        @keyframes tv-noise {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-1%, -1%); }
+            20% { transform: translate(1%, 2%); }
+            30% { transform: translate(-2%, -1%); }
+            40% { transform: translate(1%, 1%); }
+            50% { transform: translate(-1%, 2%); }
+            60% { transform: translate(2%, -1%); }
+            70% { transform: translate(-1%, -2%); }
+            80% { transform: translate(1%, -1%); }
+            90% { transform: translate(2%, 1%); }
+        }
+
         #rabbit-hand-overlay {
             position: absolute;
             top: 62%;
@@ -91,7 +119,7 @@
         }
         
         .menu-bg {
-            background: radial-gradient(circle at center, #1a0505 0%, #050202 70%, #000000 100%);
+            background: radial-gradient(circle at center, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.7) 60%, rgba(0,0,0,0.95) 100%); 
             position: absolute;
             width: 100%;
             height: 100%;
@@ -100,16 +128,7 @@
 
         /* Hình bóng con thỏ kinh dị ám ảnh trong Main Menu */
         #menu-rabbit-silhouette {
-            position: absolute;
-            bottom: 0;
-            width: 250px;
-            height: 400px;
-            background: rgba(10, 5, 5, 0.9);
-            clip-path: polygon(40% 0%, 60% 0%, 65% 20%, 75% 15%, 70% 35%, 85% 50%, 60% 100%, 40% 100%, 15% 50%, 30% 35%, 25% 15%, 35% 20%);
-            z-index: 1;
-            opacity: 0.85;
-            box-shadow: inset 0 0 40px rgba(204, 0, 0, 0.3);
-            animation: menu-rabbit-breathe 4s ease-in-out infinite;
+            display: none;
         }
         #menu-rabbit-silhouette::before, #menu-rabbit-silhouette::after {
             content: '';
@@ -169,8 +188,87 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             animation: flicker 4s infinite;
+        }
+
+        .rabbit-text {
+            color: #ffffff;
             position: relative;
-            z-index: 2;
+            display: inline-block;
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+        }
+
+        /* --- TẠO LOGO TAI THỎ TRÊN CHỮ R --- */
+        .r-letter {
+            position: relative;
+            display: inline-block;
+            line-height: 1;
+        }
+        
+        .r-letter::before, .r-letter::after {
+            content: '';
+            position: absolute;
+            background-color: #ffffff;
+            box-shadow: inset 0 -6px 8px rgba(255, 0, 0, 0.9), 0 0 10px rgba(255, 0, 0, 0.3); /* Tai thỏ trắng hơn, chỉ ứa máu đỏ ở gốc */
+            z-index: -1; /* Đảm bảo tai chìm ra sau chữ R để tạo độ nối hoàn hảo */
+        }
+        
+        /* Tai trái (dựng thẳng, hơi nghiêng) */
+        .r-letter::before {
+            width: 14px;
+            height: 48px;
+            bottom: 75%; /* Hạ thấp xuống để cắm sâu vào đỉnh chữ R */
+            top: auto;
+            left: 11px; /* Dịch sang phải để vừa đỉnh nét cong của chữ R */
+            transform-origin: bottom center;
+            transform: rotate(-10deg);
+            border-radius: 50% 50% 10% 10%;
+        }
+        
+        /* Tai phải (bị gập cúp xuống quỷ dị) */
+        .r-letter::after {
+            width: 14px;
+            height: 38px;
+            bottom: 75%; /* Hạ thấp xuống để cắm sâu vào đỉnh chữ R */
+            top: auto;
+            left: 25px; /* Dịch sang phải */
+            transform-origin: bottom center;
+            transform: rotate(25deg);
+            border-radius: 50% 50% 10% 10% / 30% 60% 10% 10%; 
+        }
+
+        .blood-drop {
+            position: absolute;
+            width: 4px;
+            height: 15px;
+            background: linear-gradient(to bottom, transparent, #cc0000 40%, #7a0000);
+            border-radius: 50px;
+            pointer-events: none;
+            z-index: 20; /* Nằm trên các nút */
+            opacity: 0;
+            filter: drop-shadow(0 0 3px #ff0000);
+        }
+
+        .drop-1 { left: 15%; bottom: 10px; animation: drip 3.2s infinite ease-in; }
+        .drop-2 { left: 45%; bottom: 5px; width: 5px; height: 22px; animation: drip 2.7s infinite ease-in 1.2s; }
+        .drop-3 { left: 70%; bottom: 15px; width: 3px; height: 18px; animation: drip 3.8s infinite ease-in 0.5s; }
+        .drop-4 { left: 90%; bottom: 8px; width: 4px; height: 16px; animation: drip 3.0s infinite ease-in 2.1s; }
+
+        @keyframes drip {
+            0% { transform: translateY(0) scaleY(0.5); opacity: 0; }
+            5% { transform: translateY(0) scaleY(1.2); opacity: 1; }
+            95% { opacity: 1; }
+            100% { transform: translateY(100vh) scaleY(2.5); opacity: 0; }
+        }
+
+        .beta-tag {
+            position: absolute;
+            bottom: 5px;
+            right: -30px;
+            font-size: 2rem;
+            color: #ff3333;
+            transform: rotate(-15deg);
+            animation: flicker 3s infinite reverse;
+            text-transform: lowercase;
         }
 
         button {
@@ -186,35 +284,36 @@
         button:hover { background-color: #fff; color: #000; }
 
         #main-menu button {
+            font-family: 'Caveat', cursive;
+            text-transform: none;
             color: #cc0000;
-            border-color: #cc0000;
-            background: rgba(20, 0, 0, 0.8);
+            background: transparent;
+            border: none;
+            box-shadow: none;
         }
         #main-menu button:hover {
-            background-color: #cc0000;
-            color: #000;
+            background-color: transparent;
+            color: #fff;
+            text-shadow: 0 0 15px #f00, 0 0 30px #f00;
+            transform: scale(1.1);
         }
 
         .menu-btns-vertical { 
             display: flex; 
             flex-direction: column; 
-            gap: 20px; 
+            gap: 10px; 
             align-items: center;
         }
         
         .menu-btns-vertical button {
-            font-size: 1.5rem;
-            padding: 15px 40px;
-            width: 250px;
+            font-size: 3rem;
+            padding: 5px 20px;
             font-weight: bold;
-            box-shadow: 0 0 15px rgba(204, 0, 0, 0.2);
         }
 
         #btn-play {
-            font-size: 2.5rem !important;
-            padding: 15px 60px !important;
-            margin-bottom: 15px;
-            width: 300px !important;
+            font-size: 4.5rem !important;
+            margin-bottom: 5px;
         }
 
         .menu-btns button {
@@ -373,10 +472,12 @@
 <body>
     <div id="game-container"></div>
     <div id="crt-overlay"></div>
+    <div id="noise-overlay"></div>
     <div id="fade-overlay"><span id="end-text"></span></div>
+    
+    <!-- EYE CANVAS OVERLAY -->
     <canvas id="eye-canvas"></canvas>
 
-    <!-- HUD -->
     <div id="hud" class="hidden">
         <button id="btn-ingame-menu">⚙️</button>
         <div id="crosshair"></div>
@@ -396,12 +497,19 @@
     <!-- Main Menu -->
     <div id="main-menu" class="ui-layer">
         <div class="menu-bg"></div>
-        <div id="menu-rabbit-silhouette"></div>
-        <h1>The Rabbit Experience</h1>
+        <h1 style="position: relative; z-index: 2; font-family: 'Caveat', cursive; text-transform: none; font-size: 7rem;">
+            The <span class="rabbit-text"><span class="r-letter">R</span>abbit
+                <span class="blood-drop drop-1"></span>
+                <span class="blood-drop drop-2"></span>
+                <span class="blood-drop drop-3"></span>
+                <span class="blood-drop drop-4"></span>
+            </span> Experience
+            <span class="beta-tag" style="font-family: 'Courier New', Courier, monospace; font-size: 2rem; color: #ff3333; position: absolute; bottom: 0px; right: -40px; transform: rotate(-15deg); text-transform: lowercase; animation: flicker 3s infinite reverse;">beta</span>
+        </h1>
         <div class="menu-btns-vertical" style="position: relative; z-index: 2;">
-            <button id="btn-play">PLAY</button>
-            <button id="btn-credit">CREDITS</button>
-            <button id="btn-donate">DONATE</button>
+            <button id="btn-play">Play</button>
+            <button id="btn-credit">Credits</button>
+            <button id="btn-donate">Donate</button>
         </div>
     </div>
 
@@ -537,6 +645,12 @@
             rabbitHand: document.getElementById('rabbit-hand-overlay')
         };
         const flashlightBtn = document.getElementById('flashlight-ui');
+
+        // GAME STATE VARIABLES
+        let inMainMenu = true;
+        let menuRabbitTimer = 2;
+        let menuRabbitAnimState = 0; // 0: idle, 1: tilt (nghẹo cổ), 2: spin 360 (quay đầu)
+        let menuRabbitAnimProgress = 0;
 
         let currentCycle = 1;
         let morningTextTriggered = false;
@@ -1216,42 +1330,54 @@
 
         const rBody2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.9), roadRMat); rBody2.position.y = 0.25; roadRabbitGroup.add(rBody2);
         const rHead2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), roadRMat); rHead2.position.set(0, 0.55, 0.35); roadRabbitGroup.add(rHead2);
+        
+        // Thêm chi tiết cho con thỏ nhảy ra (tai, mắt, mũi)
         const rEar1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.12), roadRMat); rEar1.position.set(-0.12, 0.95, 0.3); rEar1.rotation.z = -0.1; roadRabbitGroup.add(rEar1);
         const rEar2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.12), roadRMat); rEar2.position.set(0.12, 0.95, 0.3); rEar2.rotation.z = 0.1; roadRabbitGroup.add(rEar2);
-
         const roadEyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
         const rEye1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.05), roadEyeMat); rEye1.position.set(-0.12, 0.6, 0.58); roadRabbitGroup.add(rEye1);
         const rEye2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.05), roadEyeMat); rEye2.position.set(0.12, 0.6, 0.58); roadRabbitGroup.add(rEye2);
-
         const rNose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.05), new THREE.MeshBasicMaterial({ color: 0xffaacc })); rNose.position.set(0, 0.5, 0.58); roadRabbitGroup.add(rNose);
 
+        // SỬA LỖI: Đặt con thỏ ẩn nấp sau thân cây bên tay phải
         roadRabbitGroup.position.set(12, 0, -18);
-        roadRabbitGroup.rotation.y = -Math.PI / 2; 
-        roadRabbitGroup.visible = false; 
+        roadRabbitGroup.rotation.y = -Math.PI / 2; // Xoay mặt nhìn ra đường
+        roadRabbitGroup.visible = false; // Phải tàng hình lúc ban đầu chờ người chơi
         scene.add(roadRabbitGroup);
 
         const rabbitGroup = new THREE.Group();
-        const rMat = new THREE.MeshLambertMaterial({ color: 0xcccccc }); 
+        const rMat = new THREE.MeshLambertMaterial({ color: 0xdddddd }); // Màu trắng sáng hơn để nhìn rõ
         const rBody = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), rMat); rBody.position.y = 0.5; rabbitGroup.add(rBody);
-        const rHead = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), rMat); rHead.position.set(0, 1.2, 0.8); rabbitGroup.add(rHead);
-        const ear1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear1.position.set(-0.2, 1.8, 0.8); rabbitGroup.add(ear1);
-        const ear2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear2.position.set(0.2, 1.8, 0.8); rabbitGroup.add(ear2);
+        
+        // Tạo Head Group riêng biệt để có thể quay đầu/nghẹo cổ
+        const rHeadGroup = new THREE.Group();
+        rHeadGroup.position.set(0, 1.2, 0.8);
+        rHeadGroup.userData = { targetTilt: 0 };
+        rabbitGroup.add(rHeadGroup);
+
+        const rHead = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), rMat); 
+        rHeadGroup.add(rHead);
+
+        const ear1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear1.position.set(-0.2, 0.6, 0); rHeadGroup.add(ear1);
+        const ear2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.2), rMat); ear2.position.set(0.2, 0.6, 0); rHeadGroup.add(ear2);
         
         const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye1.position.set(-0.2, 1.3, 1.25); rabbitGroup.add(eye1);
-        const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye2.position.set(0.2, 1.3, 1.25); rabbitGroup.add(eye2);
+        const eye1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye1.position.set(-0.2, 0.1, 0.45); rHeadGroup.add(eye1);
+        const eye2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.1), eyeMat); eye2.position.set(0.2, 0.1, 0.45); rHeadGroup.add(eye2);
 
         const noseMat = new THREE.MeshBasicMaterial({ color: 0xffaacc });
-        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.1), noseMat); nose.position.set(0, 1.1, 1.25); rabbitGroup.add(nose);
+        const nose = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.1), noseMat); nose.position.set(0, -0.1, 0.45); rHeadGroup.add(nose);
         const mouthMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-        const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), mouthMat); mouth.position.set(0, 0.95, 1.25); rabbitGroup.add(mouth);
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), mouthMat); mouth.position.set(0, -0.25, 0.45); rHeadGroup.add(mouth);
 
         const rabbitLight = new THREE.PointLight(0xffffff, 0, 10);
         rabbitLight.position.set(0, 1.2, 2.5); 
         rabbitGroup.add(rabbitLight);
 
-        rabbitGroup.position.set(0, -10, 0); 
-        rabbitGroup.scale.set(0.6, 0.6, 0.6); 
+        // Khởi tạo vị trí đứng giữa Main Menu
+        rabbitGroup.position.set(0, -0.2, 38); 
+        rabbitGroup.scale.set(1.5, 1.5, 1.5); 
+        rabbitGroup.rotation.y = Math.PI; // Quay mặt nhìn thẳng vào camera
         scene.add(rabbitGroup);
 
         let controlsEnabled = false;
@@ -1265,6 +1391,26 @@
             initAudio();
             playSound('thunder'); 
             startAmbientSound(); 
+
+            inMainMenu = false;
+
+            // Reset camera chuẩn bị cho game
+            camera.position.set(0, 2, 45);
+            pitch = 0; yaw = 0;
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+            
+            // Giấu thỏ đi để chuẩn bị cho các sự kiện in-game
+            rabbitGroup.position.set(0, -10, 0); 
+            rabbitGroup.scale.set(0.6, 0.6, 0.6); 
+            rabbitGroup.rotation.set(0, 0, 0);
+            rHeadGroup.rotation.set(0, 0, 0);
+            rabbitLight.intensity = 0;
+
+            // Reset thời tiết về trạng thái ban đầu của Night 1
+            rainDrop.visible = false;
+            lightningTimer = Math.random() * 2 + 0.5;
+            scene.background.setHex(0x060708);
+            scene.fog.color.setHex(0x060708);
 
             uiElems.main.classList.add('hidden');
             uiElems.hud.classList.remove('hidden');
@@ -1748,6 +1894,81 @@
                 return;
             }
 
+            // PHÂN CẢNH MAIN MENU
+            if (inMainMenu) {
+                // Mưa xối xả
+                rainDrop.visible = true;
+                const pos = rainDrop.geometry.attributes.position.array;
+                for(let i = 1; i < rainCount * 3; i += 3) {
+                    pos[i] -= 40 * delta; 
+                    if (pos[i] < 0) pos[i] = 40; 
+                }
+                rainDrop.geometry.attributes.position.needsUpdate = true;
+
+                // Sấm chớp
+                lightningTimer -= delta;
+                if (lightningTimer <= 0) {
+                    scene.background.setHex(0xffffff);
+                    scene.fog.color.setHex(0xffffff);
+                    setTimeout(() => { scene.background.setHex(0x111111); scene.fog.color.setHex(0x111111); }, 50);
+                    setTimeout(() => { scene.background.setHex(0xffffff); scene.fog.color.setHex(0xffffff); }, 100);
+                    setTimeout(() => { scene.background.setHex(0x060708); scene.fog.color.setHex(0x060708); }, 150);
+                    
+                    if (audioCtx && audioCtx.state === 'running') playSound('thunder');
+                    lightningTimer = Math.random() * 4 + 2; 
+                }
+
+                // Animation của thỏ
+                menuRabbitTimer -= delta;
+                if (menuRabbitTimer <= 0 && menuRabbitAnimState === 0) {
+                    if (Math.random() > 0.35) {
+                        menuRabbitAnimState = 1; // Nghẹo cổ
+                        menuRabbitTimer = 0.5 + Math.random() * 1.5; 
+                        rHeadGroup.userData.targetTilt = (Math.random() > 0.5 ? 1 : -1) * (Math.PI / 3 + Math.random() * 0.4);
+                    } else {
+                        menuRabbitAnimState = 2; // Xoay đầu 360
+                        menuRabbitAnimProgress = 0;
+                    }
+                }
+
+                if (menuRabbitAnimState === 1) {
+                    // Chuyển động giật cục nghẹo cổ
+                    rHeadGroup.rotation.z = THREE.MathUtils.lerp(rHeadGroup.rotation.z, rHeadGroup.userData.targetTilt, 15 * delta); 
+                    if (menuRabbitTimer <= 0) {
+                        menuRabbitAnimState = 0; 
+                        menuRabbitTimer = Math.random() * 2 + 1.5;
+                    }
+                } else if (menuRabbitAnimState === 2) {
+                    // Quay đầu 360 độ quỷ dị
+                    menuRabbitAnimProgress += delta * 1.8; 
+                    let t = Math.min(menuRabbitAnimProgress, 1);
+                    // Hiệu ứng mượt mà (Ease-in-out)
+                    let eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                    rHeadGroup.rotation.y = eased * Math.PI * 2;
+                    if (t >= 1) {
+                        rHeadGroup.rotation.y = 0;
+                        menuRabbitAnimState = 0;
+                        menuRabbitTimer = Math.random() * 3 + 2;
+                    }
+                } else {
+                    // Cổ trở lại bình thường
+                    rHeadGroup.rotation.z = THREE.MathUtils.lerp(rHeadGroup.rotation.z, 0, 5 * delta);
+                }
+
+                // Ánh sáng hắt vào mặt thỏ lập lòe
+                rabbitLight.intensity = 1.5 + Math.random() * 0.8;
+                
+                // Camera lơ lửng nhẹ tạo cảm giác rùng rợn, bất ổn
+                const time = clock.elapsedTime;
+                camera.position.x = Math.sin(time) * 0.5;
+                camera.position.y = 2.5 + Math.sin(time * 1.5) * 0.15;
+                camera.lookAt(0, 2.5, 38);
+
+                renderer.render(scene, camera);
+                return; // Không chạy các logic di chuyển/chơi game khi ở Menu
+            }
+
+            // Gọi hàm render mắt nếu đang hoạt động
             if (eyeAnimState === 1) {
                 updateEyeAnimation(delta);
             }
