@@ -882,7 +882,7 @@
             isFrozen = true; isWakingUp = true; wakeUpTimer = 0;
             setTimeout(async () => { 
                 isFrozen = false; if (fromNightmare) await showSubtitle("OH my fucking god, It was just a nightmare!", 3500);
-                await showSubtitle("It's morning now, I have some more work to do!", 3000); showSubtitle("I need to get out and walk on the path to go there!", 4000);
+                await showSubtitle("It's morning now, I have some more 'rabbit' work to do!", 3000); showSubtitle("I need to get out and walk on the path to go there!", 4000);
             }, 3000); 
         }
 
@@ -1087,7 +1087,7 @@
                         uiElems.fade.innerHTML = `
                             <div style="display:flex; flex-direction:column; align-items:center; z-index: 999; position: relative;">
                                 <span style="color:#ff0000; font-size:4rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 20px #ff0000; font-weight:bold; animation: fast-flicker 0.1s infinite;">BAD ENDING</span>
-                                <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace;">The rabbits consumed you!</span>
+                                <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace;">Your mind belongs to The rabbits!</span>
                                 <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #f00; border: 4px solid #f00; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
                             </div>`;
                         document.exitPointerLock(); const btnFinal = document.getElementById('btn-final-menu');
@@ -1116,7 +1116,7 @@
                 let isHoveringInteractable = false; let hoverStr = "";
                 if (currentCycle !== 2 && intersects.length > 0 && intersects[0].distance < 6) {
                     const type = intersects[0].object.userData.type;
-                    if (isDaytime && type === 'bed') { isHoveringInteractable = true; hoverStr = "[Left Click] Not go to work and sleep"; } else if (!isDaytime || type === 'door') { isHoveringInteractable = true; }
+                    if (isDaytime && type === 'bed') { isHoveringInteractable = true; hoverStr = "."; } else if (!isDaytime || type === 'door') { isHoveringInteractable = true; }
                 }
                 if (isHoveringInteractable) uiElems.crosshair.classList.add('glow'); else uiElems.crosshair.classList.remove('glow');
                 if (hoverStr !== "") { uiElems.hoverText.textContent = hoverStr; uiElems.hoverText.classList.remove('hidden'); } else { uiElems.hoverText.classList.add('hidden'); }
@@ -1132,9 +1132,9 @@
 
                     if (currentCycle === 2 && !isDaytime) {
                         finalCycleWalkTime += delta; 
-                        if (finalCycleWalkTime > 1.5 && !finalCycleFlags[0]) { showSubtitle("i finally done killing those rabbit!", 4000); showRabbitHand(); finalCycleFlags[0] = true; }
-                        if (finalCycleWalkTime > 12 && !finalCycleFlags[1]) { showSubtitle("Everyday is just a repeat cycle, I'm such a loser!", 4000); finalCycleFlags[1] = true; }
-                        if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) { showSubtitle("WTF where is my house and why is the path so fuckin long???", 4000); finalCycleFlags[2] = true; }
+                        if (finalCycleWalkTime > 1.5 && !finalCycleFlags[0]) { showSubtitle("I've finally done killing those rabbit!", 4000); showRabbitHand(); finalCycleFlags[0] = true; }
+                        if (finalCycleWalkTime > 12 && !finalCycleFlags[1]) { showSubtitle("Everyday is just a repeat cycle, I'm feel like a loser!", 4000); finalCycleFlags[1] = true; }
+                        if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) { showSubtitle("Wait WTF where is my house and why is the path so fuckin long???", 4000); finalCycleFlags[2] = true; }
                         if (finalCycleWalkTime > 40 && !finalCycleFlags[3]) { finalCycleFlags[3] = true; triggerFinalJumpscare(); }
                     }
                 } else {
