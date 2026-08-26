@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -197,45 +197,6 @@
             text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
         }
 
-        /* --- TẠO LOGO TAI THỎ TRÊN CHỮ R --- */
-        .r-letter {
-            position: relative;
-            display: inline-block;
-            line-height: 1;
-        }
-        
-        .r-letter::before, .r-letter::after {
-            content: '';
-            position: absolute;
-            background-color: #ffffff;
-            box-shadow: inset 0 -6px 8px rgba(255, 0, 0, 0.9), 0 0 10px rgba(255, 0, 0, 0.3); /* Tai thỏ trắng hơn, chỉ ứa máu đỏ ở gốc */
-            z-index: -1; /* Đảm bảo tai chìm ra sau chữ R để tạo độ nối hoàn hảo */
-        }
-        
-        /* Tai trái (dựng thẳng, hơi nghiêng) */
-        .r-letter::before {
-            width: 14px;
-            height: 48px;
-            bottom: 75%; /* Hạ thấp xuống để cắm sâu vào đỉnh chữ R */
-            top: auto;
-            left: 11px; /* Dịch sang phải để vừa đỉnh nét cong của chữ R */
-            transform-origin: bottom center;
-            transform: rotate(-10deg);
-            border-radius: 50% 50% 10% 10%;
-        }
-        
-        /* Tai phải (bị gập cúp xuống quỷ dị) */
-        .r-letter::after {
-            width: 14px;
-            height: 38px;
-            bottom: 75%; /* Hạ thấp xuống để cắm sâu vào đỉnh chữ R */
-            top: auto;
-            left: 25px; /* Dịch sang phải */
-            transform-origin: bottom center;
-            transform: rotate(25deg);
-            border-radius: 50% 50% 10% 10% / 30% 60% 10% 10%; 
-        }
-
         .blood-drop {
             position: absolute;
             width: 4px;
@@ -283,7 +244,7 @@
 
         button:hover { background-color: #fff; color: #000; }
 
-        #main-menu button {
+        #main-menu button, #pause-menu button {
             font-family: 'Caveat', cursive;
             text-transform: none;
             color: #cc0000;
@@ -291,7 +252,7 @@
             border: none;
             box-shadow: none;
         }
-        #main-menu button:hover {
+        #main-menu button:hover, #pause-menu button:hover {
             background-color: transparent;
             color: #fff;
             text-shadow: 0 0 15px #f00, 0 0 30px #f00;
@@ -516,11 +477,11 @@
     <!-- Pause Menu (In-game) -->
     <div id="pause-menu" class="ui-layer hidden" style="z-index: 15;">
         <div class="menu-bg"></div>
-        <h2 style="font-size: 3rem; margin-bottom: 30px;">PAUSED</h2>
-        <div class="menu-btns" style="display:flex; flex-direction:column;">
-            <button id="btn-resume" style="border-color:#aaa;">CONTINUE</button>
-            <button id="btn-settings">SETTINGS</button>
-            <button id="btn-quit-main">MAIN MENU</button>
+        <h2 style="font-family: 'Caveat', cursive; font-size: 6rem; color: #cc0000; margin-bottom: 30px; animation: flicker 4s infinite;">Paused</h2>
+        <div class="menu-btns-vertical" style="position: relative; z-index: 2;">
+            <button id="btn-resume">Continue</button>
+            <button id="btn-settings">Settings</button>
+            <button id="btn-quit-main">Main Menu</button>
         </div>
     </div>
 
