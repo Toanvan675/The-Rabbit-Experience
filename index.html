@@ -36,7 +36,7 @@
             image-rendering: -webkit-optimize-contrast;
         }
 
-        /* --- STREAMING_CHUNK: Setting up Overlays and Canvas --- */
+        /* */
         #eye-canvas {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -116,8 +116,9 @@
             text-align: center;
         }
         
+        /* Updated Menu Background for better aesthetics */
         .menu-bg {
-            background-color: rgba(0, 0, 0, 0.85); 
+            background: radial-gradient(circle at center, rgba(40, 10, 10, 0.85) 0%, rgba(5, 5, 5, 0.98) 100%); 
             position: absolute;
             width: 100%; height: 100%;
             z-index: -1;
@@ -148,21 +149,22 @@
         }
         .blinking { animation: blink-slow 1.2s infinite; }
 
-        /* --- STREAMING_CHUNK: Styling UI text and Blood Drips --- */
+        /* */
         h1 {
-            font-size: 7rem;
+            font-size: 8rem;
             color: #fff; 
             margin-bottom: 50px;
             font-family: 'Caveat', cursive;
             animation: flicker 4s infinite;
             position: relative;
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
         }
 
         .rabbit-text {
             color: #ffffff;
             position: relative;
             display: inline-block;
-            text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
         }
 
         .blood-drop {
@@ -190,7 +192,7 @@
 
         .beta-tag {
             position: absolute;
-            bottom: 5px; right: -30px;
+            bottom: 5px; right: -40px;
             font-size: 2rem; color: #ff3333;
             transform: rotate(-15deg);
             animation: flicker 3s infinite reverse;
@@ -201,36 +203,38 @@
         #main-menu button, #pause-menu button, #settings-menu button, #credit-menu button, #donate-menu button {
             font-family: 'Caveat', cursive;
             text-transform: none;
-            color: #cc0000;
+            color: #990000;
             background: transparent;
             border: none;
             box-shadow: none;
-            font-size: 3rem;
+            font-size: 3.5rem;
             padding: 5px 20px;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
         }
         #main-menu button:hover, #pause-menu button:hover, #settings-menu button:hover, #credit-menu button:hover, #donate-menu button:hover {
             color: #fff;
             text-shadow: 0 0 15px #f00, 0 0 30px #f00;
-            transform: scale(1.1);
+            transform: scale(1.15);
+            letter-spacing: 2px;
         }
 
         .menu-btns-vertical { 
             display: flex; flex-direction: column; 
-            gap: 10px; align-items: center;
+            gap: 15px; align-items: center;
         }
 
-        #btn-play, #btn-resume { font-size: 4.5rem !important; margin-bottom: 5px; }
+        #btn-play, #btn-resume { font-size: 5rem !important; margin-bottom: 10px; color: #cc0000; }
 
         .info-panel {
-            background: rgba(10,10,10,0.95);
-            border: 1px solid #555;
+            background: rgba(15,10,10,0.95);
+            border: 2px solid #522;
             padding: 40px;
             width: 450px;
             margin-bottom: 20px;
-            box-shadow: 0 0 30px rgba(0,0,0,1);
+            box-shadow: 0 0 40px rgba(255,0,0,0.2);
+            border-radius: 10px;
         }
 
         #btn-ingame-menu {
@@ -293,6 +297,7 @@
         }
         #flashlight-ui.active { background-color: rgba(255, 255, 200, 0.6); border-color: #fff; box-shadow: 0 0 20px rgba(255, 255, 200, 0.5); }
         #flashlight-ui img { width: 40px; height: 40px; object-fit: contain; }
+        #flashlight-ui.disabled { opacity: 0.2; pointer-events: none; }
 
         .key-hint {
             position: absolute;
@@ -317,6 +322,22 @@
             pointer-events: none;
             background: rgba(0,0,0,0.3); padding: 10px; border-right: 3px solid #fff;
             text-align: right; transition: opacity 2s ease-in-out; opacity: 1;
+        }
+
+        #objective-ui {
+            position: absolute;
+            top: 80px; left: 20px;
+            color: #fff;
+            font-size: 1.2rem;
+            font-family: 'Courier New', Courier, monospace;
+            z-index: 5;
+            text-shadow: 2px 2px 4px #000, 0 0 10px rgba(255,0,0,0.5);
+            pointer-events: none;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 15px;
+            border-left: 3px solid #cc0000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
         }
 
         #subtitle {
@@ -352,6 +373,80 @@
             100% { transform: translate(1px, -2px) rotate(-1deg); }
         }
         .shaking { animation: shake 0.1s infinite; }
+
+        /* */
+        .news-broadcast-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a2a42 0%, #050a11 100%);
+            font-family: 'Arial', sans-serif; z-index: 10;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            overflow: hidden;
+        }
+        .news-live-bug {
+            position: absolute; top: 40px; left: 40px;
+            background: #cc0000; color: white; padding: 8px 20px;
+            font-size: 1.8rem; font-weight: bold; letter-spacing: 2px;
+            border-radius: 4px; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .news-live-dot {
+            width: 15px; height: 15px; background: white; border-radius: 50%;
+            animation: blink-slow 1s infinite;
+        }
+        .news-channel-logo {
+            position: absolute; top: 30px; right: 40px;
+            width: 120px; height: 120px;
+            background: rgba(255,255,255,0.1); border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            flex-direction: column; text-align: center;
+        }
+        .news-channel-logo span { font-weight: 900; font-size: 2.2rem; color: white; line-height: 1; }
+        .news-channel-logo small { font-size: 1rem; color: #aaa; margin-top: 5px; }
+        
+        .news-lower-third {
+            width: 100%; position: relative; z-index: 15;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+        }
+        .news-headline-row {
+            display: flex; align-items: stretch; height: auto; min-height: 80px;
+        }
+        .news-breaking-tag {
+            background: #cc0000; color: white; padding: 15px 30px;
+            font-size: 3rem; font-weight: 900; display: flex; align-items: center;
+            text-transform: uppercase; white-space: nowrap;
+        }
+        .news-main-headline {
+            background: rgba(250, 250, 250, 0.95); color: #111;
+            flex-grow: 1; display: flex; align-items: center; padding: 15px 30px;
+            font-size: 2.8rem; font-weight: 800; text-transform: uppercase;
+        }
+        .news-sub-headline {
+            background: rgba(10, 40, 100, 0.95); color: white;
+            padding: 15px 30px; font-size: 1.8rem; font-weight: 500;
+            text-align: left; line-height: 1.4;
+        }
+        .news-ticker {
+            background: #000; color: #ffcc00; padding: 10px 0;
+            font-size: 1.6rem; font-family: 'Courier New', Courier, monospace;
+            font-weight: bold; white-space: nowrap; overflow: hidden;
+            border-top: 2px solid #333;
+        }
+        .news-ticker span {
+            display: inline-block;
+            padding-left: 100vw;
+            animation: ticker-move 20s linear infinite;
+        }
+        @keyframes ticker-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100%, 0); }
+        }
+        
+        .ending-summary {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 20;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 3s ease-in-out;
+        }
     </style>
 </head>
 <body>
@@ -362,7 +457,7 @@
     
     <canvas id="eye-canvas"></canvas>
 
-    <!-- --- STREAMING_CHUNK: HTML HUD and Menus --- -->
+    <!-- -->
     <div id="hud" class="hidden">
         <button id="btn-ingame-menu">
             ☰
@@ -378,6 +473,7 @@
         <div id="rabbit-hand-overlay">
             <img src="Hand.jpg" onerror="this.onerror=null; this.src='https://placehold.co/400x300/111/f00?text=Hand.jpg+Missing';" alt="Holding Rabbit">
         </div>
+        <div id="objective-ui">Objective: Go home</div>
         <div id="instructions">
             [W,A,S,D] Move<br>
             [Leftclick] Interact<br>
@@ -455,7 +551,7 @@
     </div>
 
     <script>
-        // --- STREAMING_CHUNK: Logic Eye Animation and Audio ---
+        /* */
         const eyeCanvas = document.getElementById('eye-canvas');
         const eyeCtx = eyeCanvas.getContext('2d');
         let eyeAnimState = 0; 
@@ -503,6 +599,7 @@
             credit: document.getElementById('credit-menu'),
             donate: document.getElementById('donate-menu'),
             hud: document.getElementById('hud'),
+            objective: document.getElementById('objective-ui'),
             subtitle: document.getElementById('subtitle'),
             fade: document.getElementById('fade-overlay'),
             endText: document.getElementById('end-text'),
@@ -513,8 +610,9 @@
         };
         const flashlightBtn = document.getElementById('flashlight-ui');
 
+        // State Variables
         let currentCycle = 1;
-        let morningTextTriggered = false; let hasTurnedOnLight = false; let isDaytime = false;
+        let morningTextTriggered = false; let hasTurnedOnLight = false; let isDaytime = false; let isAfternoon = false;
         let hasScared = false; let hasEnteredHouse = false; let isFlashlightOn = false; let flashlightDead = false;
         let finalCycleWalkTime = 0; let finalCycleFlags = [false, false, false, false]; let isFinalJumpscare = false; 
         let finalScareBasePos = new THREE.Vector3(); let isPaused = false; let shakeTimer = 0; let cameraBasePos = new THREE.Vector3();
@@ -523,6 +621,9 @@
         let roadRabbitState = 0; let roadRabbitTimer = 0;
         let whiteForestTimer = 0; let isWhiteForest = false; let whiteRabbits = [];
         let isWakingUp = false; let wakeUpTimer = 0;
+
+        function updateObjective(text) { uiElems.objective.innerHTML = "Objective: <span style='color:#ff5555'>" + text + "</span>"; uiElems.objective.style.opacity = '1'; }
+        function completeObjective() { uiElems.objective.style.opacity = '0'; }
 
         function showRabbitHand() { uiElems.rabbitHand.classList.add('visible'); }
         function hideRabbitHand() { uiElems.rabbitHand.classList.remove('visible'); }
@@ -545,9 +646,11 @@
             door_open: new Audio('musics/door_open.mp3'), door_close: new Audio('musics/door_close.mp3'),
             ambient_bg: new Audio('musics/ambient_bg.mp3'), jumpscare_1: new Audio('musics/jumpscare_1.mp3'),
             jumpscare_final: new Audio('musics/jumpscare_final.mp3'), rain: new Audio('musics/rain.mp3'),
-            knock: new Audio('musics/knock.mp3'), music_3am: new Audio('musics/3AM.mp3'), white_forest: new Audio('musics/white_forest.mp3')
+            knock: new Audio('musics/knock.mp3'), music_3am: new Audio('musics/3AM.mp3'), white_forest: new Audio('musics/white_forest.mp3'),
+            happy_ending: new Audio('musics/happy_ending.mp3'), bad_ending: new Audio('musics/bad_ending.mp3')
         };
         sfx.ambient_bg.loop = true; sfx.jumpscare_final.loop = true; sfx.rain.loop = true; sfx.knock.loop = true; sfx.music_3am.loop = true; sfx.white_forest.loop = true;
+        sfx.happy_ending.loop = true; sfx.bad_ending.loop = true;
 
         volSlider.addEventListener('input', (e) => {
             masterVolume = parseFloat(e.target.value); if (masterGain) masterGain.gain.value = masterVolume;
@@ -555,6 +658,7 @@
             if (sfx.jumpscare_final) sfx.jumpscare_final.volume = masterVolume; if (sfx.path_steps) sfx.path_steps.volume = masterVolume;
             if (sfx.house_steps) sfx.house_steps.volume = masterVolume; if (sfx.rain) sfx.rain.volume = masterVolume;
             if (sfx.knock) sfx.knock.volume = masterVolume; if (sfx.music_3am) sfx.music_3am.volume = masterVolume; if (sfx.white_forest) sfx.white_forest.volume = masterVolume;
+            if (sfx.happy_ending) sfx.happy_ending.volume = masterVolume; if (sfx.bad_ending) sfx.bad_ending.volume = masterVolume;
         });
 
         let audioCtx; let masterGain; let noiseBuffer; let isAmbientPlaying = false;
@@ -632,7 +736,7 @@
         }
         function startAmbientSound() { if (!audioCtx || isAmbientPlaying) return; isAmbientPlaying = true; if (sfx.ambient_bg && !isNightmare) { sfx.ambient_bg.volume = masterVolume; sfx.ambient_bg.play().catch(e => console.log("Missing ambient")); } }
 
-        // --- STREAMING_CHUNK: ThreeJS World Setup ---
+        /* */
         const container = document.getElementById('game-container');
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x060708); scene.fog = new THREE.FogExp2(0x060708, 0.05); 
         fovSlider.addEventListener('input', (e) => { if (camera) { camera.fov = parseInt(e.target.value); camera.updateProjectionMatrix(); } });
@@ -688,7 +792,7 @@
         for(let i = 0; i < rainCount; i++) { rainPositions[i*3] = (Math.random() - 0.5) * 80; rainPositions[i*3+1] = Math.random() * 40; rainPositions[i*3+2] = (Math.random() - 0.5) * 800 - 300; }
         rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3)); const rainMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.05, transparent: true, opacity: 0.5 }); const rainDrop = new THREE.Points(rainGeo, rainMat); rainDrop.visible = false; scene.add(rainDrop);
 
-        // --- STREAMING_CHUNK: Detailed House Construction ---
+        /* */
         const bloodGroup = new THREE.Group(); scene.add(bloodGroup);
         const houseGroup = new THREE.Group(); houseGroup.position.set(0, 0, -45); scene.add(houseGroup); const interactables = []; 
         const houseLight = new THREE.PointLight(0xffddaa, 0, 20); houseLight.position.set(0, 5, 0); houseGroup.add(houseLight);
@@ -785,7 +889,7 @@
         const switchMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa, emissive: 0x0055ff, emissiveIntensity: 1 });
         const switchBtn = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.1), switchMat); switchBtn.position.set(2.5, 4, 7.4); switchBtn.userData = { type: 'switch', isOn: false }; houseGroup.add(switchBtn); interactables.push(switchBtn);
 
-        // --- STREAMING_CHUNK: Rabbits Setup ---
+        /* */
         const roadRabbitGroup = new THREE.Group(); const roadRMat = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
         const rBody2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.9), roadRMat); rBody2.position.y = 0.25; roadRabbitGroup.add(rBody2);
         const rHead2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), roadRMat); rHead2.position.set(0, 0.55, 0.35); roadRabbitGroup.add(rHead2);
@@ -803,7 +907,9 @@
         const noseMat = new THREE.MeshBasicMaterial({ color: 0xffaacc }); const noseR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.1), noseMat); noseR.position.set(0, -0.1, 0.45); rHeadGroup.add(noseR);
         const mouthMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); const mouthR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), mouthMat); mouthR.position.set(0, -0.25, 0.45); rHeadGroup.add(mouthR);
         const rabbitLight = new THREE.PointLight(0xffffff, 0, 10); rabbitLight.position.set(0, 1.2, 2.5); rabbitGroup.add(rabbitLight);
-        rabbitGroup.position.set(0, -2, 43); rabbitGroup.scale.set(3, 4, 3); rabbitGroup.rotation.y = Math.PI; scene.add(rabbitGroup);
+        
+        // Cải thiện menu background rabbit: cho ra xa hơn, scale to vừa phải
+        rabbitGroup.position.set(0, -1, 38); rabbitGroup.scale.set(1.5, 2.0, 1.5); rabbitGroup.rotation.y = Math.PI; scene.add(rabbitGroup);
 
         function createWhiteForestRabbits() {
             const wrMat = new THREE.MeshLambertMaterial({color: 0x888888});
@@ -816,9 +922,10 @@
             }
         }
 
-        // --- STREAMING_CHUNK: Input, Events and Story Logic ---
+        /* */
         let controlsEnabled = false; let isFrozen = false; const moveSpeed = 6; let keys = { w: false, a: false, s: false, d: false }; let pitch = 0; let yaw = 0;
         let typingInterval; let hideTimeout; const TYPE_SPEED = 40; 
+        
         function showSubtitle(text, duration = 3000) {
             return new Promise((resolve) => {
                 clearInterval(typingInterval); clearTimeout(hideTimeout); uiElems.subtitle.textContent = ""; uiElems.subtitle.style.opacity = 1; let i = 0;
@@ -834,10 +941,15 @@
             initAudio(); playSound('thunder'); startAmbientSound(); 
             uiElems.main.classList.add('hidden'); uiElems.hud.classList.remove('hidden'); document.body.requestPointerLock();
             showRabbitHand();
+            
+            // Set game start position
             camera.position.set(0, 2, 45); pitch = 0; yaw = 0; camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+            
+            // Reset rabbit for jumpscares later
             rabbitGroup.position.set(0, -10, 0); rabbitGroup.scale.set(0.6, 0.6, 0.6);
+            
             setTimeout(() => { const inst = document.getElementById('instructions'); if (inst) inst.style.opacity = '0'; }, 10000);
-            setTimeout(async () => { await showSubtitle("What a hard day of work, I should go home!", 3000); showSubtitle("My woodenhouse is at the end of this path", 3000); }, 1000);
+            setTimeout(async () => { await showSubtitle("What a hard day of work, I should go home!", 3000); updateObjective("Go home"); showSubtitle("My woodenhouse is at the end of this path", 3000); }, 1000);
         });
 
         container.addEventListener('click', () => { if (uiElems.main.classList.contains('hidden') && uiElems.pause.classList.contains('hidden') && uiElems.settings.classList.contains('hidden') && uiElems.credit.classList.contains('hidden') && uiElems.donate.classList.contains('hidden') && !isFrozen && !isFinalJumpscare) if (document.pointerLockElement !== document.body) document.body.requestPointerLock(); });
@@ -871,7 +983,7 @@
         document.addEventListener('keyup', (e) => { if(e.code === 'KeyW' || e.code === 'ArrowUp') keys.w = false; if(e.code === 'KeyA' || e.code === 'ArrowLeft') keys.a = false; if(e.code === 'KeyS' || e.code === 'ArrowDown') keys.s = false; if(e.code === 'KeyD' || e.code === 'ArrowRight') keys.d = false; });
 
         function triggerWakeUp(fromNightmare = false) {
-            uiElems.endText.classList.remove('blinking'); uiElems.endText.textContent = ""; hideSubtitle(); 
+            uiElems.endText.classList.remove('blinking'); uiElems.endText.textContent = ""; hideSubtitle(); uiElems.fade.style.pointerEvents = 'none';
             scene.background.setHex(0x87CEEB); scene.fog.color.setHex(0x87CEEB); scene.fog.density = 0.025; 
             if (!sunLight) { sunLight = new THREE.DirectionalLight(0xffffff, 1.2); sunLight.position.set(10, 20, 10); scene.add(sunLight); } sunLight.intensity = 1.2; ambientLight.intensity = 0.5;
             flashlightDead = false; isDaytime = true; updateClockTime("5:00 AM"); if (isFlashlightOn) toggleFlashlight(); 
@@ -883,49 +995,92 @@
             setTimeout(async () => { 
                 isFrozen = false; if (fromNightmare) await showSubtitle("OH my fucking god, It was just a nightmare!", 3500);
                 await showSubtitle("It's morning now, I have some more 'rabbit' work to do!", 3000); showSubtitle("I need to get out and walk on the path to go there!", 4000);
+                updateObjective("Do 'Rabbit work'?");
+            }, 3000); 
+        }
+
+        function triggerWakeUpAfternoon() {
+            uiElems.endText.classList.remove('blinking'); uiElems.endText.textContent = ""; hideSubtitle(); uiElems.fade.style.pointerEvents = 'none';
+            
+            // Set sky to orange afternoon color
+            scene.background.setHex(0xd96d00); scene.fog.color.setHex(0xd96d00); scene.fog.density = 0.025; 
+            if (!sunLight) { sunLight = new THREE.DirectionalLight(0xffffff, 1.2); sunLight.position.set(10, 20, 10); scene.add(sunLight); } 
+            sunLight.color.setHex(0xffaa55); ambientLight.color.setHex(0xffddaa);
+            sunLight.intensity = 1.0; ambientLight.intensity = 0.6;
+            
+            isAfternoon = true; flashlightDead = true; if (isFlashlightOn) toggleFlashlight(); 
+            flashlightBtn.classList.add('disabled');
+            updateClockTime("2:00 PM"); 
+            startEyeWakeUp(); uiElems.fade.style.opacity = 0; 
+            
+            camera.position.set(-4, 1.0, -45); pitch = -Math.PI / 2.5; yaw = 0; camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+            isFrozen = true; isWakingUp = true; wakeUpTimer = 0;
+            
+            setTimeout(async () => { 
+                isFrozen = false;
+                await showSubtitle("Yawn... That was a good sleep.", 3000);
+                showSubtitle("I'm bored, let's watch TV!", 4000);
+                updateObjective("watch TV");
             }, 3000); 
         }
 
         function triggerHappyEnding() {
             isFrozen = true; uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; uiElems.fade.style.transition = "opacity 2s ease-in-out"; uiElems.fade.style.backgroundColor = '#000';
             if (isAmbientPlaying && sfx.ambient_bg) sfx.ambient_bg.pause();
+            if (sfx.happy_ending) { sfx.happy_ending.volume = masterVolume; sfx.happy_ending.currentTime = 0; sfx.happy_ending.play().catch(()=>{}); }
+            
             setTimeout(() => {
                 playSynthFallback('ui_blip'); 
                 uiElems.fade.innerHTML = `
-                    <div style="width: 85%; max-width: 900px; background: #000088; border: 15px solid #222; border-radius: 20px; padding: 40px; text-align: left; position: relative; overflow: hidden; box-shadow: 0 0 80px rgba(255,255,255,0.2);">
-                        <div style="position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(transparent 50%, rgba(0,0,0,0.4) 50%); background-size: 100% 4px; pointer-events: none; z-index: 2;"></div>
-                        <h1 style="color: yellow; font-family: 'Arial', sans-serif; margin-top: 0; border-bottom: 4px solid white; padding-bottom: 15px; font-size: 3rem; position: relative; z-index: 1;">BREAKING NEWS</h1>
-                        <p style="color: white; font-size: 2rem; font-family: 'Courier New', Courier, monospace; line-height: 1.6; position: relative; z-index: 1;">
-                            There was recently a virus that was originally caused by rabbits.<br><br>
-                            People who touched those who infected might experience extreme hallucination and eventually die!
-                        </p>
-                    </div>`;
+                    <div class="news-broadcast-container">
+                        <div class="news-live-bug"><div class="news-live-dot"></div> LIVE</div>
+                        <div class="news-channel-logo"><span>NEWS</span><small>NETWORK</small></div>
+                        
+                        <div class="news-lower-third">
+                            <div class="news-headline-row">
+                                <div class="news-breaking-tag">BREAKING NEWS</div>
+                                <div class="news-main-headline">DEADLY "RABBIT" VIRUS OUTBREAK</div>
+                            </div>
+                            <div class="news-sub-headline">Authorities trace origin to local wildlife. Victims report severe hallucinations before sudden death. Military enforces immediate quarantine zones.</div>
+                            <div class="news-ticker">
+                                <span>>>> AVOID ALL CONTACT WITH LOCAL WILDLIFE >>> MILITARY DEPLOYED TO CONTAINMENT ZONES >>> DO NOT OPEN DOORS FOR ANYONE OR ANYTHING >>> REPEAT: STAY IN YOUR HOMES >>> THIS IS NOT A DRILL >>></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
                 setTimeout(() => {
-                    uiElems.fade.innerHTML = `
-                        <div style="display:flex; flex-direction:column; align-items:center; z-index: 999; position: relative;">
-                            <span style="color:#00ff00; font-size:6rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 30px #00ff00; font-weight:bold; animation: fast-flicker 0.1s infinite;">HAPPY ENDING</span>
-                            <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace;">You chose to sleep and survived the apocalypse!</span>
-                            <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #0f0; border: 4px solid #0f0; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
-                        </div>`;
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.className = 'ending-summary';
+                    summaryDiv.innerHTML = `
+                        <span style="color:#00ff00; font-size:6rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 30px #00ff00; font-weight:bold; animation: fast-flicker 0.1s infinite;">HAPPY ENDING</span>
+                        <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace; text-align: center;">You chose to sleep and ignored the noises outside.<br>You survived the night of the apocalypse!</span>
+                        <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #0f0; border: 4px solid #0f0; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
+                    `;
+                    uiElems.fade.appendChild(summaryDiv);
+                    
+                    void summaryDiv.offsetWidth;
+                    summaryDiv.style.opacity = '1';
+
                     document.exitPointerLock();
                     const btnFinal = document.getElementById('btn-final-menu');
                     btnFinal.addEventListener('mouseover', (e) => { e.target.style.background = '#0f0'; e.target.style.color = '#000'; e.target.style.boxShadow = '0 0 30px #0f0'; });
                     btnFinal.addEventListener('mouseout', (e) => { e.target.style.background = 'rgba(0,0,0,0.8)'; e.target.style.color = '#0f0'; e.target.style.boxShadow = 'none'; });
                     btnFinal.addEventListener('click', () => location.reload());
-                }, 8000);
+                }, 10000); 
             }, 2500);
         }
 
         function triggerNightmare() {
             isNightmare = true; flashlightDead = false; hasSeenBloodInNightmare = false; isNightmareChase = false;
-            uiElems.endText.classList.remove('blinking'); uiElems.endText.textContent = ""; updateClockTime("3:00 AM");
+            uiElems.endText.classList.remove('blinking'); uiElems.endText.textContent = ""; updateClockTime("3:00 AM"); uiElems.fade.style.pointerEvents = 'none';
             camera.position.set(-4, 1.0, -45); pitch = -Math.PI / 2.5; yaw = 0; camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
             if (sfx.ambient_bg && !sfx.ambient_bg.paused) sfx.ambient_bg.pause();
             if (sfx.music_3am) { sfx.music_3am.volume = masterVolume; sfx.music_3am.currentTime = 0; sfx.music_3am.play().catch(e => console.log("Missing 3AM.mp3")); }
             if (sfx.knock) { sfx.knock.volume = masterVolume; sfx.knock.play().catch(e => { knockingInterval = setInterval(() => playSound('knock_synth'), 400); }); }
             uiElems.fade.style.opacity = 0; startEyeWakeUp();
             isFrozen = true; isWakingUp = true; wakeUpTimer = 0;
-            setTimeout(() => { showSubtitle("Who the fuck knocking my door at 3AM? I have to check that nigga out!", 4000); }, 3500);
+            setTimeout(() => { showSubtitle("Who the fuck knocking my door at 3AM? I have to check that nigga out!", 4000); updateObjective("Check the nigga at door"); }, 3500);
         }
 
         function generateBloodPath() {
@@ -945,7 +1100,7 @@
             if (currentCycle === 2) { houseGroup.visible = false; hideRabbitHand(); }
             switchBtn.userData.isOn = false; switchBtn.material.color.setHex(0xaaaaaa); switchBtn.material.emissive.setHex(0x0055ff); houseLight.intensity = 0;
             doorMesh.userData.isOpen = false; doorPivot.rotation.y = 0; camera.position.set(0, 2, 45); pitch = 0; yaw = 0; camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
-            uiElems.fade.style.opacity = 0; setTimeout(() => { isFrozen = false; }, 3000);
+            uiElems.fade.style.opacity = 0; uiElems.fade.style.pointerEvents = 'none'; setTimeout(() => { isFrozen = false; updateObjective("Go home"); }, 3000);
         }
 
         const raycaster = new THREE.Raycaster();
@@ -954,30 +1109,50 @@
                 raycaster.setFromCamera(new THREE.Vector2(0, 0), camera); const intersects = raycaster.intersectObjects(interactables);
                 if (currentCycle !== 2 && intersects.length > 0 && intersects[0].distance < 6) {
                     const obj = intersects[0].object; const type = obj.userData.type;
-                    if (isDaytime && type !== 'door' && type !== 'bed') return; 
-                    if (isNightmare && type !== 'door') return; 
+                    
+                    if (isAfternoon) {
+                        if (type === 'tv') { completeObjective(); triggerHappyEnding(); return; } 
+                        else if (type === 'bed') { showSubtitle("I just woke up, I'm not tired.", 3000); return; } 
+                        else if (type === 'door') {
+                            obj.userData.isOpen = !obj.userData.isOpen; playSound(obj.userData.isOpen ? 'door_open' : 'door_close'); doorPivot.rotation.y = obj.userData.isOpen ? Math.PI / 2 : 0; return;
+                        }
+                    }
 
                     if (type === 'door') {
                         if (isNightmare) {
-                            if (!nightmareDoorOpened) { nightmareDoorOpened = true; if (sfx.knock) sfx.knock.pause(); if (knockingInterval) clearInterval(knockingInterval); obj.userData.isOpen = true; playSound('door_open'); doorPivot.rotation.y = Math.PI / 2; generateBloodPath(); }
+                            if (!nightmareDoorOpened) { completeObjective(); nightmareDoorOpened = true; if (sfx.knock) sfx.knock.pause(); if (knockingInterval) clearInterval(knockingInterval); obj.userData.isOpen = true; playSound('door_open'); doorPivot.rotation.y = Math.PI / 2; generateBloodPath(); }
                         } else if (!isDaytime && hasEnteredHouse) { playSound('door_close'); showSubtitle("I locked the door, no need to get out at night!.", 3000); return;
                         } else { obj.userData.isOpen = !obj.userData.isOpen; playSound(obj.userData.isOpen ? 'door_open' : 'door_close'); doorPivot.rotation.y = obj.userData.isOpen ? Math.PI / 2 : 0; }
                     } 
                     else if (type === 'switch') {
                         playSound('click'); obj.userData.isOn = true; hasTurnedOnLight = true; houseLight.intensity = 1.2; obj.material.color.setHex(0x00ff00); obj.material.emissive.setHex(0x000000); 
-                        if (currentCycle === 1) showSubtitle("I'm tired, better get some sleep!", 0);
+                        if (currentCycle === 1 && !isDaytime) showSubtitle("I'm tired, better get some sleep!", 0);
                     }
                     else if (type === 'bed') {
-                        if (isDaytime && currentCycle === 1) { triggerHappyEnding(); return; }
+                        if (isNightmare) { showSubtitle("I can't sleep with that loud knocking!", 3000); return; }
+
+                        if (isDaytime && currentCycle === 1 && !isAfternoon) { 
+                            if (!isFrozen) { 
+                                completeObjective();
+                                isFrozen = true; hideSubtitle(); uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; 
+                                setTimeout(() => { uiElems.endText.textContent = "Zzz..."; uiElems.endText.classList.add('blinking'); setTimeout(() => { triggerWakeUpAfternoon(); }, 4000); }, 3000); 
+                            }
+                            return; 
+                        }
+
                         if (!hasTurnedOnLight) { showSubtitle("I need to find the light switch first...", 3000); } 
                         else {
                             if (!isFrozen) { 
-                                isFrozen = true; hideSubtitle(); uiElems.fade.style.opacity = 1; 
+                                completeObjective();
+                                isFrozen = true; hideSubtitle(); uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; 
                                 setTimeout(() => { uiElems.endText.textContent = "Zzz..."; uiElems.endText.classList.add('blinking'); setTimeout(() => { if (currentCycle === 1 && !isNightmare && !isDaytime) triggerNightmare(); else triggerWakeUp(); }, 5000); }, 3000); 
                             }
                         }
                     }
-                    else if (type === 'tv') { playSound('click'); showSubtitle("I don't wanna use the tv rightnow", 3000); }
+                    else if (type === 'tv') { 
+                        playSound('click'); 
+                        showSubtitle("I don't wanna use the tv right now", 3000); 
+                    }
                 }
             }
         });
@@ -1007,7 +1182,7 @@
                 trunkInst.visible = false; branchInst1.visible = false; branchInst2.visible = false; leavesInst.visible = false; houseGroup.visible = false; path.visible = false; floor.material.color.setHex(0xeeeeee);
                 rabbitGroup.position.y = -10; rabbitLight.intensity = 0; createWhiteForestRabbits();
                 if (sfx.white_forest) { sfx.white_forest.volume = masterVolume; sfx.white_forest.play().catch(()=>{}); }
-                uiElems.fade.style.opacity = 0; isFrozen = false; showSubtitle("Where... am I?", 4000);
+                uiElems.fade.style.opacity = 0; isFrozen = false; showSubtitle("Where... am I?", 4000); updateObjective("KiLl YouR SeLff?");
             }, 1000); 
         }
 
@@ -1036,7 +1211,9 @@
                     menuRabbitAnimProgress += delta * 1.8; let t = Math.min(menuRabbitAnimProgress, 1); let eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; rHeadGroup.rotation.y = eased * Math.PI * 2;
                     if (t >= 1) { rHeadGroup.rotation.y = 0; menuRabbitAnimState = 0; menuRabbitTimer = Math.random() * 3 + 2; }
                 } else { rHeadGroup.rotation.z = THREE.MathUtils.lerp(rHeadGroup.rotation.z, 0, 5 * delta); }
-                rabbitLight.intensity = 1.5 + Math.random() * 0.8; const time = clock.elapsedTime; camera.position.x = Math.sin(time) * 0.5; camera.position.y = 2.5 + Math.sin(time * 1.5) * 0.15; camera.lookAt(0, 2.5, 43);
+                rabbitLight.intensity = 1.5 + Math.random() * 0.8; const time = clock.elapsedTime; 
+                // Camera menu look
+                camera.position.x = Math.sin(time) * 0.5; camera.position.y = 2.5 + Math.sin(time * 1.5) * 0.15; camera.lookAt(0, 1.0, 38);
                 renderer.render(scene, camera); return; 
             }
 
@@ -1083,13 +1260,18 @@
                 if (whiteForestTimer > 30.0 && uiElems.fade.style.opacity === '0') {
                     isFrozen = true; uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; uiElems.fade.style.transition = "opacity 3s ease-in-out, background-color 3s"; uiElems.fade.style.backgroundColor = 'rgba(0, 0, 0, 1)';
                     if (sfx.white_forest) sfx.white_forest.pause();
+                    if (sfx.bad_ending) { sfx.bad_ending.volume = masterVolume; sfx.bad_ending.currentTime = 0; sfx.bad_ending.play().catch(()=>{}); }
                     setTimeout(() => {
                         uiElems.fade.innerHTML = `
-                            <div style="display:flex; flex-direction:column; align-items:center; z-index: 999; position: relative;">
+                            <div class="ending-summary">
                                 <span style="color:#ff0000; font-size:4rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 20px #ff0000; font-weight:bold; animation: fast-flicker 0.1s infinite;">BAD ENDING</span>
                                 <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace;">Your mind belongs to The rabbits!</span>
                                 <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #f00; border: 4px solid #f00; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
                             </div>`;
+                        
+                        void uiElems.fade.children[0].offsetWidth;
+                        uiElems.fade.children[0].style.opacity = '1';
+
                         document.exitPointerLock(); const btnFinal = document.getElementById('btn-final-menu');
                         btnFinal.addEventListener('mouseover', (e) => { e.target.style.background = '#f00'; e.target.style.color = '#000'; e.target.style.boxShadow = '0 0 30px #f00'; });
                         btnFinal.addEventListener('mouseout', (e) => { e.target.style.background = 'rgba(0,0,0,0.8)'; e.target.style.color = '#f00'; e.target.style.boxShadow = 'none'; });
@@ -1116,7 +1298,7 @@
                 let isHoveringInteractable = false; let hoverStr = "";
                 if (currentCycle !== 2 && intersects.length > 0 && intersects[0].distance < 6) {
                     const type = intersects[0].object.userData.type;
-                    if (isDaytime && type === 'bed') { isHoveringInteractable = true; hoverStr = "."; } else if (!isDaytime || type === 'door') { isHoveringInteractable = true; }
+                    if (isAfternoon) { isHoveringInteractable = true; } else if (isDaytime && type === 'bed') { isHoveringInteractable = true; hoverStr = "."; } else if (!isDaytime || type === 'door') { isHoveringInteractable = true; }
                 }
                 if (isHoveringInteractable) uiElems.crosshair.classList.add('glow'); else uiElems.crosshair.classList.remove('glow');
                 if (hoverStr !== "") { uiElems.hoverText.textContent = hoverStr; uiElems.hoverText.classList.remove('hidden'); } else { uiElems.hoverText.classList.add('hidden'); }
@@ -1135,7 +1317,7 @@
                         if (finalCycleWalkTime > 1.5 && !finalCycleFlags[0]) { showSubtitle("I've finally done killing those rabbit!", 4000); showRabbitHand(); finalCycleFlags[0] = true; }
                         if (finalCycleWalkTime > 12 && !finalCycleFlags[1]) { showSubtitle("Everyday is just a repeat cycle, I'm feel like a loser!", 4000); finalCycleFlags[1] = true; }
                         if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) { showSubtitle("Wait WTF where is my house and why is the path so fuckin long???", 4000); finalCycleFlags[2] = true; }
-                        if (finalCycleWalkTime > 40 && !finalCycleFlags[3]) { finalCycleFlags[3] = true; triggerFinalJumpscare(); }
+                        if (finalCycleWalkTime > 40 && !finalCycleFlags[3]) { completeObjective(); finalCycleFlags[3] = true; triggerFinalJumpscare(); }
                     }
                 } else {
                     if (sfx.house_steps && !sfx.house_steps.paused) { sfx.house_steps.pause(); sfx.house_steps.currentTime = 0; }
@@ -1154,8 +1336,16 @@
                 else if (currentCycle === 2 && !isWhiteForest) { if (camera.position.x > 4.5) { camera.position.x = 4.5; } else if (camera.position.x < -4.5) { camera.position.x = -4.5; } }
                 if(camera.position.x > 90) camera.position.x = 90; if(camera.position.x < -90) camera.position.x = -90;
                 
-                if (isDaytime && camera.position.z > 45 && !isWhiteForest) { if (!isFrozen) { isFrozen = true; uiElems.fade.style.opacity = 1; setTimeout(() => resetToNightTime(), 3000); } } else if (!isDaytime && camera.position.z > 48) { camera.position.z = 48; showSubtitle("I shouldn't go back, I need to get home.", 2000); }
-                if (isDaytime && camera.position.z > 0 && !morningTextTriggered && !isWhiteForest) { morningTextTriggered = true; showSubtitle("weird, why won any bird chirping anymore in the last couple days", 4000); }
+                if (isDaytime && camera.position.z > 45 && !isWhiteForest) { 
+                    if (isAfternoon) {
+                        camera.position.z = 45; showSubtitle("There's nothing to do out there right now, I should watch TV.", 3000);
+                    } else if (!isFrozen) { 
+                        completeObjective();
+                        isFrozen = true; uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; setTimeout(() => resetToNightTime(), 3000); 
+                    } 
+                } else if (!isDaytime && camera.position.z > 48) { camera.position.z = 48; showSubtitle("I shouldn't go back, I need to get home.", 2000); }
+                
+                if (isDaytime && camera.position.z > 0 && !morningTextTriggered && !isWhiteForest && !isAfternoon) { morningTextTriggered = true; showSubtitle("weird, why won any bird chirping anymore in the last couple days", 4000); }
                 
                 const isDoorOpen = doorMesh.userData.isOpen;
                 if (currentCycle !== 2 && camera.position.z < -35 && camera.position.z > -55 && Math.abs(camera.position.x) < 9 && !isWhiteForest) {
@@ -1167,8 +1357,8 @@
                     if (camera.position.x > 4.0 && camera.position.x < 7.0 && camera.position.z > -42.5 && camera.position.z < -39.5) { const dLeft = Math.abs(camera.position.x - 4.0); const dBack = Math.abs(camera.position.z - (-42.5)); if (dLeft < dBack) camera.position.x = 4.0; else camera.position.z = -42.5; }
                 }
                 if (currentCycle !== 2 && !hasEnteredHouse && camera.position.z < -38 && Math.abs(camera.position.x) < 5 && !isWhiteForest) {
-                    hasEnteredHouse = true; hideRabbitHand(); if (doorMesh.userData.isOpen) { doorMesh.userData.isOpen = false; doorPivot.rotation.y = 0; playSound('door_close'); }
-                    playSound('click'); if (currentCycle === 1) { if (isFlashlightOn) toggleFlashlight(); flashlightDead = true; showSubtitle("The door slammed shut and locked! I need to find the light button...", 4000); }
+                    hasEnteredHouse = true; completeObjective(); hideRabbitHand(); if (doorMesh.userData.isOpen) { doorMesh.userData.isOpen = false; doorPivot.rotation.y = 0; playSound('door_close'); }
+                    playSound('click'); if (currentCycle === 1) { if (isFlashlightOn) toggleFlashlight(); flashlightDead = true; showSubtitle("The door slammed shut and locked! I need to find the light button...", 4000); setTimeout(() => { updateObjective("Go to sleep"); }, 4000); }
                 }
             } else { if (sfx.house_steps && !sfx.house_steps.paused) { sfx.house_steps.pause(); sfx.house_steps.currentTime = 0; } if (sfx.path_steps && !sfx.path_steps.paused) { sfx.path_steps.pause(); sfx.path_steps.currentTime = 0; } }
 
