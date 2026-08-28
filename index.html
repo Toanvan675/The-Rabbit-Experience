@@ -36,7 +36,6 @@
             image-rendering: -webkit-optimize-contrast;
         }
 
-        /* */
         #eye-canvas {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -116,7 +115,6 @@
             text-align: center;
         }
         
-        /* Updated Menu Background for better aesthetics */
         .menu-bg {
             background: radial-gradient(circle at center, rgba(40, 10, 10, 0.85) 0%, rgba(5, 5, 5, 0.98) 100%); 
             position: absolute;
@@ -138,9 +136,9 @@
             100% { opacity: 1; text-shadow: 3px 3px 0 #500000; }
         }
         
-        @keyframes fast-flicker {
+        @keyframes gentle-flicker {
             0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
+            50% { opacity: 0.85; transform: scale(1.02); }
         }
 
         @keyframes blink-slow {
@@ -149,7 +147,6 @@
         }
         .blinking { animation: blink-slow 1.2s infinite; }
 
-        /* */
         h1 {
             font-size: 8rem;
             color: #fff; 
@@ -374,13 +371,30 @@
         }
         .shaking { animation: shake 0.1s infinite; }
 
-        /* */
         .news-broadcast-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #1a2a42 0%, #050a11 100%);
             font-family: 'Arial', sans-serif; z-index: 10;
             display: flex; flex-direction: column; justify-content: flex-end;
             overflow: hidden;
+        }
+        .news-anchor-box {
+            position: absolute; top: 20%; right: 10%; width: 320px; height: 380px;
+            background: #0d1b2a; border: 4px solid #334155; border-radius: 8px;
+            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .news-anchor-avatar {
+            width: 140px; height: 140px; background: #1e293b; border-radius: 50%;
+            border: 3px solid #64748b; display: flex; justify-content: center; align-items: center;
+            margin-bottom: 20px; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        .news-anchor-avatar::before {
+            content: '👤'; font-size: 70px;
+        }
+        .news-anchor-name {
+            background: #cc0000; color: white; padding: 6px 15px; font-size: 1.1rem;
+            font-weight: bold; border-radius: 4px; letter-spacing: 1px;
         }
         .news-live-bug {
             position: absolute; top: 40px; left: 40px;
@@ -394,7 +408,7 @@
             animation: blink-slow 1s infinite;
         }
         .news-channel-logo {
-            position: absolute; top: 30px; right: 40px;
+            position: absolute; top: 30px; right: 450px;
             width: 120px; height: 120px;
             background: rgba(255,255,255,0.1); border: 3px solid rgba(255,255,255,0.3);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
@@ -457,7 +471,6 @@
     
     <canvas id="eye-canvas"></canvas>
 
-    <!-- -->
     <div id="hud" class="hidden">
         <button id="btn-ingame-menu">
             ☰
@@ -551,7 +564,6 @@
     </div>
 
     <script>
-        /* */
         const eyeCanvas = document.getElementById('eye-canvas');
         const eyeCtx = eyeCanvas.getContext('2d');
         let eyeAnimState = 0; 
@@ -610,7 +622,6 @@
         };
         const flashlightBtn = document.getElementById('flashlight-ui');
 
-        // State Variables
         let currentCycle = 1;
         let morningTextTriggered = false; let hasTurnedOnLight = false; let isDaytime = false; let isAfternoon = false;
         let hasScared = false; let hasEnteredHouse = false; let isFlashlightOn = false; let flashlightDead = false;
@@ -736,7 +747,6 @@
         }
         function startAmbientSound() { if (!audioCtx || isAmbientPlaying) return; isAmbientPlaying = true; if (sfx.ambient_bg && !isNightmare) { sfx.ambient_bg.volume = masterVolume; sfx.ambient_bg.play().catch(e => console.log("Missing ambient")); } }
 
-        /* */
         const container = document.getElementById('game-container');
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x060708); scene.fog = new THREE.FogExp2(0x060708, 0.05); 
         fovSlider.addEventListener('input', (e) => { if (camera) { camera.fov = parseInt(e.target.value); camera.updateProjectionMatrix(); } });
@@ -744,31 +754,100 @@
         const renderer = new THREE.WebGLRenderer({ antialias: false }); const pixelRatio = 0.15; renderer.setSize(window.innerWidth * pixelRatio, window.innerHeight * pixelRatio, false); container.appendChild(renderer.domElement);
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.08); scene.add(ambientLight); let sunLight;
         
-        const flashlight = new THREE.SpotLight(0xfffaee, 0); flashlight.position.set(0, 0, 0); flashlight.target.position.set(0, 0, -1); flashlight.angle = Math.PI / 7; flashlight.penumbra = 0.1; flashlight.distance = 50; flashlight.decay = 1.5; 
+        // Spotlight for flashlight: narrow angle, realistic physics projection
+        const flashlight = new THREE.SpotLight(0xfffaee, 0); flashlight.position.set(0, 0, 0); flashlight.target.position.set(0, 0, -1); flashlight.angle = Math.PI / 10; flashlight.penumbra = 0.5; flashlight.distance = 45; flashlight.decay = 2.0; 
         camera.add(flashlight); camera.add(flashlight.target); scene.add(camera);
 
         function toggleFlashlight() {
             if (flashlightDead) { showSubtitle("lmao, the flashlight is dead", 3000); return; }
             isFlashlightOn = !isFlashlightOn; playSound(isFlashlightOn ? 'flashlight_on' : 'flashlight_off');
             const inHouse = (camera.position.z < -37 && Math.abs(camera.position.x) < 8);
-            flashlight.intensity = isFlashlightOn ? (inHouse ? 4 : 15) : 0; 
-            flashlight.distance = isFlashlightOn ? (inHouse ? 10 : 50) : 0;
+            flashlight.intensity = isFlashlightOn ? (inHouse ? 5 : 20) : 0; 
+            flashlight.distance = isFlashlightOn ? (inHouse ? 12 : 45) : 0;
             flashlightBtn.classList.toggle('active', isFlashlightOn);
-            if (isFlashlightOn) { pathMat.emissive.setHex(0x2a1a10); pathMat.color.setHex(0x5c4033); } else { pathMat.emissive.setHex(0x000000); pathMat.color.setHex(0x1f140d); }
         }
         flashlightBtn.addEventListener('click', (e) => { e.stopPropagation(); if (controlsEnabled) toggleFlashlight(); });
 
-        function createWoodTexture(baseColor, stripeColor) {
-            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256; const ctx = canvas.getContext('2d');
-            ctx.fillStyle = baseColor; ctx.fillRect(0, 0, 256, 256);
-            for(let i = 0; i < 200; i++) { ctx.fillStyle = stripeColor; ctx.globalAlpha = Math.random() * 0.15; ctx.fillRect(0, Math.random() * 256, 256, Math.random() * 4 + 1); }
-            const tex = new THREE.CanvasTexture(canvas); tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; return tex;
+        function createPixelTexture(width, height, renderFunc) {
+            const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d');
+            renderFunc(ctx, width, height);
+            const tex = new THREE.CanvasTexture(canvas); 
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; 
+            tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; 
+            return tex;
         }
-        const woodWallTex = createWoodTexture('#3a2415', '#000000'); const woodFloorTex = createWoodTexture('#2a180c', '#000000'); const woodRoofTex = createWoodTexture('#1c1006', '#000000');
-        const floorGeo = new THREE.PlaneGeometry(300, 3500); const floorMat = new THREE.MeshLambertMaterial({ color: 0x050a05 }); const floor = new THREE.Mesh(floorGeo, floorMat); floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -300); scene.add(floor);
-        const pathGeo = new THREE.PlaneGeometry(5, 3500); const pathMat = new THREE.MeshLambertMaterial({ color: 0x1f140d }); const path = new THREE.Mesh(pathGeo, pathMat); path.rotation.x = -Math.PI / 2; path.position.set(0, 0.02, -300); scene.add(path);
 
-        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x120c08 }); const branchMat = new THREE.MeshLambertMaterial({ color: 0x18100b }); const leavesMat = new THREE.MeshLambertMaterial({ color: 0x0a140a });
+        const woodWallTex = createPixelTexture(64, 64, (ctx, w, h) => {
+            ctx.fillStyle = '#3a2415'; ctx.fillRect(0, 0, w, h);
+            for(let i = 0; i < 200; i++) { ctx.fillStyle = '#000000'; ctx.globalAlpha = Math.random() * 0.2; ctx.fillRect(0, Math.random() * h, w, Math.random() * 2 + 1); }
+        });
+        const woodFloorTex = createPixelTexture(64, 64, (ctx, w, h) => {
+            ctx.fillStyle = '#2a180c'; ctx.fillRect(0, 0, w, h);
+            for(let i = 0; i < 200; i++) { ctx.fillStyle = '#110a05'; ctx.globalAlpha = Math.random() * 0.25; ctx.fillRect(0, Math.random() * h, w, Math.random() * 2 + 1); }
+        });
+        const woodRoofTex = createPixelTexture(32, 32, (ctx, w, h) => {
+            ctx.fillStyle = '#1c1006'; ctx.fillRect(0, 0, w, h);
+            for(let i = 0; i < 100; i++) { ctx.fillStyle = '#000000'; ctx.globalAlpha = 0.3; ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+        });
+        
+        const groundTex = createPixelTexture(64, 64, (ctx, w, h) => {
+            for(let x=0; x<w; x++) { for(let y=0; y<h; y++) {
+                const val = Math.random();
+                if (val > 0.8) ctx.fillStyle = '#0d140d';
+                else if (val > 0.4) ctx.fillStyle = '#060a06';
+                else ctx.fillStyle = '#090e09';
+                ctx.fillRect(x, y, 1, 1);
+            }}
+        }); groundTex.repeat.set(120, 1200);
+
+        const dirtPathTex = createPixelTexture(64, 64, (ctx, w, h) => {
+            for(let x=0; x<w; x++) { for(let y=0; y<h; y++) {
+                const val = Math.random();
+                if (val > 0.8) ctx.fillStyle = '#3d2618';
+                else if (val > 0.4) ctx.fillStyle = '#2b1b10';
+                else ctx.fillStyle = '#1f130b';
+                ctx.fillRect(x, y, 1, 1);
+            }}
+        }); dirtPathTex.repeat.set(2, 600);
+
+        const trunkTex = createPixelTexture(16, 32, (ctx, w, h) => {
+            for(let x=0; x<w; x++) { for(let y=0; y<h; y++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#150e09' : '#0b0704';
+                ctx.fillRect(x, y, 1, Math.random() * 4 + 1);
+            }}
+        }); trunkTex.repeat.set(1, 2);
+
+        const leafTex = createPixelTexture(32, 32, (ctx, w, h) => {
+            for(let x=0; x<w; x++) { for(let y=0; y<h; y++) {
+                const val = Math.random();
+                if (val > 0.8) ctx.fillStyle = '#0a1a0a';
+                else if (val > 0.4) ctx.fillStyle = '#061006';
+                else ctx.fillStyle = '#040c04';
+                ctx.fillRect(x, y, 1, 1);
+            }}
+        });
+
+        const grassSpriteTex = createPixelTexture(16, 16, (ctx, w, h) => {
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#0f240f'; 
+            ctx.fillRect(2, 8, 2, 8); ctx.fillRect(8, 4, 2, 12); ctx.fillRect(12, 10, 2, 6);
+            ctx.fillStyle = '#081408'; ctx.fillRect(5, 6, 2, 10); ctx.fillRect(10, 12, 2, 4);
+        });
+        const flowerSpriteTex = createPixelTexture(16, 16, (ctx, w, h) => {
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#0f240f'; 
+            ctx.fillRect(7, 6, 2, 10);
+            ctx.fillStyle = '#7a0000'; 
+            ctx.fillRect(6, 4, 4, 4); ctx.fillRect(5, 5, 2, 2); ctx.fillRect(9, 5, 2, 2);
+        });
+
+        const floorGeo = new THREE.PlaneGeometry(300, 3500); const floorMat = new THREE.MeshPhongMaterial({ map: groundTex, shininess: 0 }); const floor = new THREE.Mesh(floorGeo, floorMat); floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -300); scene.add(floor);
+        const pathGeo = new THREE.PlaneGeometry(5, 3500); const pathMat = new THREE.MeshPhongMaterial({ map: dirtPathTex, shininess: 0 }); const path = new THREE.Mesh(pathGeo, pathMat); path.rotation.x = -Math.PI / 2; path.position.set(0, 0.02, -300); scene.add(path);
+
+        const trunkMat = new THREE.MeshLambertMaterial({ map: trunkTex }); 
+        const branchMat = new THREE.MeshLambertMaterial({ map: trunkTex }); 
+        const leavesMat = new THREE.MeshLambertMaterial({ map: leafTex });
+        
         const treeCount = 7000; const validTrees = [];
         for (let i = 0; i < treeCount; i++) {
             let x; if (Math.random() < 0.65) x = (Math.random() > 0.5 ? 1 : -1) * (3.2 + Math.random() * 15); else x = (Math.random() - 0.5) * 220;
@@ -788,11 +867,68 @@
         }
         scene.add(trunkInst); scene.add(branchInst1); scene.add(branchInst2); scene.add(leavesInst);
 
+        const size = 1.2; const half = size / 2;
+        const crossGeo = new THREE.BufferGeometry();
+        const vertices = new Float32Array([
+            -half, size, 0,  half, size, 0,  -half, 0, 0,  half, 0, 0, 
+            0, size, -half,  0, size, half,  0, 0, -half,  0, 0, half  
+        ]);
+        const uvs = new Float32Array([ 0,1, 1,1, 0,0, 1,0,  0,1, 1,1, 0,0, 1,0 ]);
+        const indices = [ 0,2,1, 2,3,1, 4,6,5, 6,7,5 ];
+        crossGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        crossGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        crossGeo.setIndex(indices);
+        crossGeo.computeVertexNormals();
+
+        const foliageCount = 12000; const validFoliage = [];
+        for (let i = 0; i < foliageCount; i++) {
+            const x = (Math.random() - 0.5) * 260;
+            const z = (Math.random() * 3200) - 1700;
+            if (Math.abs(x) < 3.5 && z < 100 && z > -1050) continue; 
+            if (Math.abs(x) < 14 && z < -30 && z > -60) continue;
+            validFoliage.push({x, z});
+        }
+
+        const grassMat = new THREE.MeshLambertMaterial({ map: grassSpriteTex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+        const flowerMat = new THREE.MeshLambertMaterial({ map: flowerSpriteTex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+        const bushGeo = new THREE.BoxGeometry(2, 1.5, 2);
+        
+        let gCount = 0, fCount = 0, bCount = 0;
+        validFoliage.forEach(f => {
+            const r = Math.random();
+            if(r < 0.68) gCount++; else if(r < 0.85) fCount++; else bCount++;
+        });
+
+        const grassInst = new THREE.InstancedMesh(crossGeo, grassMat, gCount);
+        const flowerInst = new THREE.InstancedMesh(crossGeo, flowerMat, fCount);
+        const bushInst = new THREE.InstancedMesh(bushGeo, leavesMat, bCount);
+
+        let gIdx = 0, fIdx = 0, bIdx = 0;
+        validFoliage.forEach(f => {
+            const r = Math.random();
+            if (r < 0.68) {
+                dummy.position.set(f.x, 0, f.z);
+                dummy.scale.setScalar(0.5 + Math.random() * 0.9);
+                dummy.rotation.y = Math.random() * Math.PI;
+                dummy.updateMatrix(); grassInst.setMatrixAt(gIdx++, dummy.matrix);
+            } else if (r < 0.85) {
+                dummy.position.set(f.x, 0, f.z);
+                dummy.scale.setScalar(0.4 + Math.random() * 0.7);
+                dummy.rotation.y = Math.random() * Math.PI;
+                dummy.updateMatrix(); flowerInst.setMatrixAt(fIdx++, dummy.matrix);
+            } else {
+                dummy.position.set(f.x, 0.5, f.z);
+                dummy.scale.set(0.8+Math.random()*0.6, 0.8+Math.random()*0.6, 0.8+Math.random()*0.6);
+                dummy.rotation.y = Math.random() * Math.PI;
+                dummy.updateMatrix(); bushInst.setMatrixAt(bIdx++, dummy.matrix);
+            }
+        });
+        scene.add(grassInst); scene.add(flowerInst); scene.add(bushInst);
+
         const rainCount = 20000; const rainGeo = new THREE.BufferGeometry(); const rainPositions = new Float32Array(rainCount * 3);
         for(let i = 0; i < rainCount; i++) { rainPositions[i*3] = (Math.random() - 0.5) * 80; rainPositions[i*3+1] = Math.random() * 40; rainPositions[i*3+2] = (Math.random() - 0.5) * 800 - 300; }
         rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3)); const rainMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.05, transparent: true, opacity: 0.5 }); const rainDrop = new THREE.Points(rainGeo, rainMat); rainDrop.visible = false; scene.add(rainDrop);
 
-        /* */
         const bloodGroup = new THREE.Group(); scene.add(bloodGroup);
         const houseGroup = new THREE.Group(); houseGroup.position.set(0, 0, -45); scene.add(houseGroup); const interactables = []; 
         const houseLight = new THREE.PointLight(0xffddaa, 0, 20); houseLight.position.set(0, 5, 0); houseGroup.add(houseLight);
@@ -808,7 +944,7 @@
         const woodFloor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshLambertMaterial({map: woodFloorTex})); woodFloor.rotation.x = -Math.PI / 2; woodFloor.position.set(0, 0.05, 0); houseGroup.add(woodFloor);
 
         function createDecorativeWindow() {
-            const winGroup = new THREE.Group(); const frameWoodMat = new THREE.MeshLambertMaterial({ color: 0x221208 }); const glassPaneMat = new THREE.MeshLambertMaterial({ color: 0x1a2b3c, transparent: true, opacity: 0.65, emissive: 0x0a1520, emissiveIntensity: 0.3 });
+            const winGroup = new THREE.Group(); const frameWoodMat = new THREE.MeshLambertMaterial({ map: woodWallTex }); const glassPaneMat = new THREE.MeshLambertMaterial({ color: 0x1a2b3c, transparent: true, opacity: 0.65, emissive: 0x0a1520, emissiveIntensity: 0.3 });
             const fW = 3.2, fH = 2.4, fT = 0.15, fD = 0.25;
             const topBar = new THREE.Mesh(new THREE.BoxGeometry(fW, fT, fD), frameWoodMat); topBar.position.y = fH/2; winGroup.add(topBar);
             const botBar = new THREE.Mesh(new THREE.BoxGeometry(fW, fT, fD), frameWoodMat); botBar.position.y = -fH/2; winGroup.add(botBar);
@@ -821,21 +957,45 @@
         const windowRight = createDecorativeWindow(); windowRight.position.set(7.45, 4.5, 0); windowRight.rotation.y = -Math.PI / 2; houseGroup.add(windowRight);
         const windowLeft = createDecorativeWindow(); windowLeft.position.set(-7.45, 4.5, 0); windowLeft.rotation.y = Math.PI / 2; houseGroup.add(windowLeft);
 
+        const doorTex = createPixelTexture(64, 128, (ctx, w, h) => {
+            ctx.fillStyle = '#2b1b11'; ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = '#1c100a'; ctx.fillRect(4, 4, w-8, h/2 - 8); ctx.fillRect(4, h/2 + 4, w-8, h/2 - 12);
+            for(let i=0; i<150; i++) { ctx.fillStyle = '#0a0503'; ctx.globalAlpha = Math.random() * 0.25; ctx.fillRect(0, Math.random() * h, w, Math.random() * 3 + 1); }
+        });
         const doorPivot = new THREE.Group(); doorPivot.position.set(-2, 0, 8); houseGroup.add(doorPivot);
-        const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.4), new THREE.MeshLambertMaterial({color: 0x4a2a10})); doorMesh.position.set(2, 3, 0); doorMesh.userData = { type: 'door', isOpen: false }; doorPivot.add(doorMesh); interactables.push(doorMesh);
+        const doorMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.4), new THREE.MeshLambertMaterial({map: doorTex})); doorMesh.position.set(2, 3, 0); doorMesh.userData = { type: 'door', isOpen: false }; doorPivot.add(doorMesh); interactables.push(doorMesh);
+        const doorHandle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 0.2), new THREE.MeshLambertMaterial({color: 0xcccccc})); doorHandle.position.set(1.4, 3, 0.25); doorPivot.add(doorHandle);
+
+        const darkWoodTex = createPixelTexture(32, 32, (ctx, w, h) => {
+            ctx.fillStyle = '#2e1c11'; ctx.fillRect(0, 0, w, h);
+            for(let i = 0; i < 150; i++) { ctx.fillStyle = '#150d08'; ctx.globalAlpha = Math.random() * 0.3; ctx.fillRect(0, Math.random() * h, w, Math.random() * 2 + 1); }
+        });
+        const mattressTex = createPixelTexture(32, 32, (ctx, w, h) => {
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, 0, w, h);
+            for(let i = 0; i < 100; i++) { ctx.fillStyle = '#0f172a'; ctx.globalAlpha = 0.5; ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+        });
+        const blanketTex = createPixelTexture(32, 32, (ctx, w, h) => {
+            ctx.fillStyle = '#7a0000'; ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = '#4a0000';
+            for(let i = 0; i < w; i += 4) { ctx.fillRect(i, 0, 1, h); ctx.fillRect(0, i, w, 1); }
+        });
+        const tvTex = createPixelTexture(32, 32, (ctx, w, h) => {
+            ctx.fillStyle = '#3a2b1c'; ctx.fillRect(0, 0, w, h);
+            for(let i = 0; i < 150; i++) { ctx.fillStyle = '#1a0b00'; ctx.globalAlpha = Math.random() * 0.2; ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+        });
 
         const bedGroup = new THREE.Group(); bedGroup.position.set(-5, 0, -4);
-        const frameMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+        const frameMat = new THREE.MeshLambertMaterial({ map: darkWoodTex });
         const bedBase = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.6, 7.2), frameMat); bedBase.position.y = 0.3; bedGroup.add(bedBase);
         const headboard = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.2, 0.4), frameMat); headboard.position.set(0, 1.1, -3.4); bedGroup.add(headboard);
         const footboard = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.0, 0.4), frameMat); footboard.position.set(0, 0.5, 3.4); bedGroup.add(footboard);
-        const mattressMat = new THREE.MeshLambertMaterial({ color: 0x1e293b }); const mattress = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.6, 6.6), mattressMat); mattress.position.set(0, 0.8, 0); bedGroup.add(mattress);
-        const blanketMat = new THREE.MeshLambertMaterial({ color: 0x991b1b }); const blanket = new THREE.Mesh(new THREE.BoxGeometry(4.25, 0.65, 4.4), blanketMat); blanket.position.set(0, 0.82, 1.0); bedGroup.add(blanket);
-        const pillowMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc }); const pillow1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 1.2), pillowMat); pillow1.position.set(0, 1.2, -2.5); pillow1.rotation.x = 0.15; bedGroup.add(pillow1);
+        const mattressMat = new THREE.MeshLambertMaterial({ map: mattressTex }); const mattress = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.6, 6.6), mattressMat); mattress.position.set(0, 0.8, 0); bedGroup.add(mattress);
+        const blanketMat = new THREE.MeshLambertMaterial({ map: blanketTex }); const blanket = new THREE.Mesh(new THREE.BoxGeometry(4.25, 0.65, 4.4), blanketMat); blanket.position.set(0, 0.82, 1.0); bedGroup.add(blanket);
+        const pillowMat = new THREE.MeshLambertMaterial({ color: 0xdddddd }); const pillow1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 1.2), pillowMat); pillow1.position.set(0, 1.2, -2.5); pillow1.rotation.x = 0.15; bedGroup.add(pillow1);
         const bedHitbox = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.2, 7.2), new THREE.MeshBasicMaterial({ visible: false })); bedHitbox.position.set(0, 1.1, 0); bedHitbox.userData = { type: 'bed' }; bedGroup.add(bedHitbox); houseGroup.add(bedGroup); interactables.push(bedHitbox);
 
         const nightstandGroup = new THREE.Group(); nightstandGroup.position.set(-2.0, 0, -6.5);
-        const nightstandWoodMat = new THREE.MeshLambertMaterial({ color: 0x2e1c11 }); const nsHandleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+        const nightstandWoodMat = new THREE.MeshLambertMaterial({ map: darkWoodTex }); const nsHandleMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
         const nsLegGeo = new THREE.BoxGeometry(0.1, 1.2, 0.1);
         const nsLeg1 = new THREE.Mesh(nsLegGeo, nightstandWoodMat); nsLeg1.position.set(-0.65, 0.6, -0.65); nightstandGroup.add(nsLeg1);
         const nsLeg2 = new THREE.Mesh(nsLegGeo, nightstandWoodMat); nsLeg2.position.set(0.65, 0.6, -0.65); nightstandGroup.add(nsLeg2);
@@ -847,13 +1007,13 @@
         const nsShelf = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 1.4), nightstandWoodMat); nsShelf.position.set(0, 0.4, 0); nightstandGroup.add(nsShelf);
         houseGroup.add(nightstandGroup);
 
-        const clockCanvas = document.createElement('canvas'); clockCanvas.width = 256; clockCanvas.height = 128; const clockCtx = clockCanvas.getContext('2d'); const clockTex = new THREE.CanvasTexture(clockCanvas); clockTex.minFilter = THREE.LinearFilter; clockTex.magFilter = THREE.LinearFilter;
+        const clockCanvas = document.createElement('canvas'); clockCanvas.width = 256; clockCanvas.height = 128; const clockCtx = clockCanvas.getContext('2d'); const clockTex = new THREE.CanvasTexture(clockCanvas); clockTex.minFilter = THREE.NearestFilter; clockTex.magFilter = THREE.NearestFilter;
         function updateClockTime(timeStr) { clockCtx.fillStyle = '#000000'; clockCtx.fillRect(0, 0, 256, 128); clockCtx.fillStyle = '#ff0000'; clockCtx.font = 'bold 50px "Courier New"'; clockCtx.textAlign = 'center'; clockCtx.textBaseline = 'middle'; clockCtx.shadowColor = '#ff0000'; clockCtx.shadowBlur = 10; clockCtx.fillText(timeStr, 128, 64); clockTex.needsUpdate = true; }
         updateClockTime("9:00 PM");
         const clockGroup = new THREE.Group(); const clockBody = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.45, 0.28), new THREE.MeshLambertMaterial({ color: 0x111111 })); const clockFace = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.36), new THREE.MeshBasicMaterial({ map: clockTex })); clockFace.position.set(0, 0, 0.15); clockGroup.add(clockBody); clockGroup.add(clockFace);
         clockGroup.position.set(-2.0, 1.35, -6.5); clockGroup.rotation.x = -0.15; clockGroup.rotation.y = Math.PI / 6; houseGroup.add(clockGroup);
 
-        const tableGroup = new THREE.Group(); const tableWoodMat = new THREE.MeshLambertMaterial({color: 0x3e2723});
+        const tableGroup = new THREE.Group(); const tableWoodMat = new THREE.MeshLambertMaterial({map: darkWoodTex});
         const tableTopObj = new THREE.Mesh(new THREE.BoxGeometry(5, 0.2, 2.5), tableWoodMat); tableTopObj.position.set(0, 1.4, 0); tableGroup.add(tableTopObj);
         const tShelf = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.1, 2.3), tableWoodMat); tShelf.position.set(0, 0.5, 0); tableGroup.add(tShelf);
         const legGeoT = new THREE.BoxGeometry(0.2, 1.5, 0.2);
@@ -863,34 +1023,23 @@
         const leg4T = new THREE.Mesh(legGeoT, tableWoodMat); leg4T.position.set(2.3, 0.75, 1.1); tableGroup.add(leg4T);
         tableGroup.position.set(4, 0, -6); houseGroup.add(tableGroup);
         
-        const tvGroup = new THREE.Group(); const tvCasingMat = new THREE.MeshLambertMaterial({color: 0x4a3b2c}); const tvScreenMat = new THREE.MeshLambertMaterial({color: 0x1a2b2c, emissive: 0x050a0a}); const tvDetailsMat = new THREE.MeshLambertMaterial({color: 0x111111}); 
+        const tvGroup = new THREE.Group(); const tvCasingMat = new THREE.MeshLambertMaterial({map: tvTex}); const tvScreenMat = new THREE.MeshLambertMaterial({color: 0x1a2b2c, emissive: 0x050a0a}); const tvDetailsMat = new THREE.MeshLambertMaterial({color: 0x111111}); 
         const tvBack = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 1.0), tvDetailsMat); tvBack.position.set(0, 0, -0.6); tvGroup.add(tvBack);
         const tvFront = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.8, 0.6), tvCasingMat); tvGroup.add(tvFront);
         const tvHitbox = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.8, 1.6), new THREE.MeshBasicMaterial({visible: false})); tvHitbox.userData = { type: 'tv' }; tvGroup.add(tvHitbox); interactables.push(tvHitbox);
         const tvScreenObj = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 0.1), tvScreenMat); tvScreenObj.position.set(-0.2, 0, 0.31); tvGroup.add(tvScreenObj);
         const tvPanel = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.4, 0.1), tvDetailsMat); tvPanel.position.set(1.0, 0, 0.31); tvGroup.add(tvPanel);
         const powerLed = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.1), new THREE.MeshBasicMaterial({color: 0xff0000})); powerLed.position.set(1.0, 0.5, 0.35); tvGroup.add(powerLed);
-        const knobGeoT = new THREE.CylinderGeometry(0.08, 0.08, 0.15, 16); knobGeoT.rotateX(Math.PI / 2);
+        const knobGeoT = new THREE.CylinderGeometry(0.08, 0.08, 0.15, 8); knobGeoT.rotateX(Math.PI / 2);
         const knob1T = new THREE.Mesh(knobGeoT, tvDetailsMat); knob1T.position.set(1.0, 0.2, 0.35); tvGroup.add(knob1T); const knob2T = new THREE.Mesh(knobGeoT, tvDetailsMat); knob2T.position.set(1.0, -0.2, 0.35); tvGroup.add(knob2T); const knob3T = new THREE.Mesh(knobGeoT, tvDetailsMat); knob3T.position.set(1.0, -0.5, 0.35); tvGroup.add(knob3T);
         const antennaBaseT = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.4), tvDetailsMat); antennaBaseT.position.set(0, 0.95, 0); tvGroup.add(antennaBaseT);
-        const antennaRodGeoT = new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8); const ant1T = new THREE.Mesh(antennaRodGeoT, new THREE.MeshLambertMaterial({color: 0x888888})); ant1T.position.set(-0.3, 1.6, 0); ant1T.rotation.z = Math.PI / 5; tvGroup.add(ant1T); const ant2T = new THREE.Mesh(antennaRodGeoT, new THREE.MeshLambertMaterial({color: 0x888888})); ant2T.position.set(0.3, 1.6, 0); ant2T.rotation.z = -Math.PI / 5; tvGroup.add(ant2T);
+        const antennaRodGeoT = new THREE.CylinderGeometry(0.02, 0.02, 1.5, 4); const ant1T = new THREE.Mesh(antennaRodGeoT, new THREE.MeshLambertMaterial({color: 0x555555})); ant1T.position.set(-0.3, 1.6, 0); ant1T.rotation.z = Math.PI / 5; tvGroup.add(ant1T); const ant2T = new THREE.Mesh(antennaRodGeoT, new THREE.MeshLambertMaterial({color: 0x555555})); ant2T.position.set(0.3, 1.6, 0); ant2T.rotation.z = -Math.PI / 5; tvGroup.add(ant2T);
         tvGroup.position.set(4, 2.4, -6.2); houseGroup.add(tvGroup);
 
-        const chairGroup = new THREE.Group(); const chairWoodMat = new THREE.MeshLambertMaterial({ color: 0x2d1b0e });
-        const chairSeat = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.12, 1.3), chairWoodMat); chairSeat.position.y = 1.1; chairGroup.add(chairSeat);
-        const chairLegGeo = new THREE.BoxGeometry(0.12, 1.1, 0.12);
-        const legFL = new THREE.Mesh(chairLegGeo, chairWoodMat); legFL.position.set(-0.55, 0.55, 0.55); chairGroup.add(legFL); const legFR = new THREE.Mesh(chairLegGeo, chairWoodMat); legFR.position.set(0.55, 0.55, 0.55); chairGroup.add(legFR); const legBL = new THREE.Mesh(chairLegGeo, chairWoodMat); legBL.position.set(-0.55, 0.55, -0.55); chairGroup.add(legBL); const legBR = new THREE.Mesh(chairLegGeo, chairWoodMat); legBR.position.set(0.55, 0.55, -0.55); chairGroup.add(legBR);
-        const backPostGeo = new THREE.BoxGeometry(0.12, 1.3, 0.12); const backPostL = new THREE.Mesh(backPostGeo, chairWoodMat); backPostL.position.set(-0.55, 1.75, -0.55); chairGroup.add(backPostL); const backPostR = new THREE.Mesh(backPostGeo, chairWoodMat); backPostR.position.set(0.55, 1.75, -0.55); chairGroup.add(backPostR);
-        const backTopBar = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.35, 0.08), chairWoodMat); backTopBar.position.set(0, 2.2, -0.55); chairGroup.add(backTopBar);
-        const slatGeo = new THREE.BoxGeometry(0.08, 0.85, 0.05); for (let s = -0.35; s <= 0.35; s += 0.35) { const slat = new THREE.Mesh(slatGeo, chairWoodMat); slat.position.set(s, 1.65, -0.55); chairGroup.add(slat); }
-        chairGroup.position.set(5.5, 0, 4); chairGroup.rotation.y = -Math.PI / 4; houseGroup.add(chairGroup);
-        const chair2 = chairGroup.clone(); chair2.position.set(2.0, 0, -3.5); chair2.rotation.y = Math.PI / 6; houseGroup.add(chair2);
-
-        const switchMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa, emissive: 0x0055ff, emissiveIntensity: 1 });
+        const switchMat = new THREE.MeshLambertMaterial({ color: 0x888888, emissive: 0x0055ff, emissiveIntensity: 1 });
         const switchBtn = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.1), switchMat); switchBtn.position.set(2.5, 4, 7.4); switchBtn.userData = { type: 'switch', isOn: false }; houseGroup.add(switchBtn); interactables.push(switchBtn);
 
-        /* */
-        const roadRabbitGroup = new THREE.Group(); const roadRMat = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
+        const roadRabbitGroup = new THREE.Group(); const roadRMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
         const rBody2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.9), roadRMat); rBody2.position.y = 0.25; roadRabbitGroup.add(rBody2);
         const rHead2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), roadRMat); rHead2.position.set(0, 0.55, 0.35); roadRabbitGroup.add(rHead2);
         const rEar1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.12), roadRMat); rEar1.position.set(-0.12, 0.95, 0.3); rEar1.rotation.z = -0.1; roadRabbitGroup.add(rEar1); const rEar2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.6, 0.12), roadRMat); rEar2.position.set(0.12, 0.95, 0.3); rEar2.rotation.z = 0.1; roadRabbitGroup.add(rEar2);
@@ -898,7 +1047,7 @@
         const rNose = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.05), new THREE.MeshBasicMaterial({ color: 0xffaacc })); rNose.position.set(0, 0.5, 0.58); roadRabbitGroup.add(rNose);
         roadRabbitGroup.position.set(12, 0, -18); roadRabbitGroup.rotation.y = -Math.PI / 2; roadRabbitGroup.visible = false; scene.add(roadRabbitGroup);
 
-        const rabbitGroup = new THREE.Group(); const rMat = new THREE.MeshLambertMaterial({ color: 0xcccccc }); 
+        const rabbitGroup = new THREE.Group(); const rMat = new THREE.MeshLambertMaterial({ color: 0x888888 }); 
         const rBody = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 2), rMat); rBody.position.y = 0.5; rabbitGroup.add(rBody);
         const rHeadGroup = new THREE.Group(); rHeadGroup.position.set(0, 1.2, 0.8); rHeadGroup.userData = { targetTilt: 0 }; rabbitGroup.add(rHeadGroup);
         const rHead = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), rMat); rHeadGroup.add(rHead);
@@ -908,7 +1057,6 @@
         const mouthMat = new THREE.MeshBasicMaterial({ color: 0x000000 }); const mouthR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), mouthMat); mouthR.position.set(0, -0.25, 0.45); rHeadGroup.add(mouthR);
         const rabbitLight = new THREE.PointLight(0xffffff, 0, 10); rabbitLight.position.set(0, 1.2, 2.5); rabbitGroup.add(rabbitLight);
         
-        // Cải thiện menu background rabbit: cho ra xa hơn, scale to vừa phải
         rabbitGroup.position.set(0, -1, 38); rabbitGroup.scale.set(1.5, 2.0, 1.5); rabbitGroup.rotation.y = Math.PI; scene.add(rabbitGroup);
 
         function createWhiteForestRabbits() {
@@ -922,8 +1070,8 @@
             }
         }
 
-        /* */
         let controlsEnabled = false; let isFrozen = false; const moveSpeed = 6; let keys = { w: false, a: false, s: false, d: false }; let pitch = 0; let yaw = 0;
+        let headBobTimer = 0;
         let typingInterval; let hideTimeout; const TYPE_SPEED = 40; 
         
         function showSubtitle(text, duration = 3000) {
@@ -942,10 +1090,7 @@
             uiElems.main.classList.add('hidden'); uiElems.hud.classList.remove('hidden'); document.body.requestPointerLock();
             showRabbitHand();
             
-            // Set game start position
             camera.position.set(0, 2, 45); pitch = 0; yaw = 0; camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
-            
-            // Reset rabbit for jumpscares later
             rabbitGroup.position.set(0, -10, 0); rabbitGroup.scale.set(0.6, 0.6, 0.6);
             
             setTimeout(() => { const inst = document.getElementById('instructions'); if (inst) inst.style.opacity = '0'; }, 10000);
@@ -1002,7 +1147,6 @@
         function triggerWakeUpAfternoon() {
             uiElems.endText.classList.remove('blinking'); uiElems.endText.textContent = ""; hideSubtitle(); uiElems.fade.style.pointerEvents = 'none';
             
-            // Set sky to orange afternoon color
             scene.background.setHex(0xd96d00); scene.fog.color.setHex(0xd96d00); scene.fog.density = 0.025; 
             if (!sunLight) { sunLight = new THREE.DirectionalLight(0xffffff, 1.2); sunLight.position.set(10, 20, 10); scene.add(sunLight); } 
             sunLight.color.setHex(0xffaa55); ambientLight.color.setHex(0xffddaa);
@@ -1035,6 +1179,10 @@
                     <div class="news-broadcast-container">
                         <div class="news-live-bug"><div class="news-live-dot"></div> LIVE</div>
                         <div class="news-channel-logo"><span>NEWS</span><small>NETWORK</small></div>
+                        <div class="news-anchor-box">
+                            <div class="news-anchor-avatar"></div>
+                            <div class="news-anchor-name">ANCHOR: JOHN DOE</div>
+                        </div>
                         
                         <div class="news-lower-third">
                             <div class="news-headline-row">
@@ -1053,7 +1201,7 @@
                     const summaryDiv = document.createElement('div');
                     summaryDiv.className = 'ending-summary';
                     summaryDiv.innerHTML = `
-                        <span style="color:#00ff00; font-size:6rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 30px #00ff00; font-weight:bold; animation: fast-flicker 0.1s infinite;">HAPPY ENDING</span>
+                        <span style="color:#00ff00; font-size:6rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 30px #00ff00; font-weight:bold; animation: gentle-flicker 2s infinite;">HAPPY ENDING</span>
                         <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace; text-align: center;">You chose to sleep and ignored the noises outside.<br>You survived the night of the apocalypse!</span>
                         <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #0f0; border: 4px solid #0f0; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
                     `;
@@ -1098,7 +1246,7 @@
             scene.background.setHex(0x060708); scene.fog.color.setHex(0x060708); scene.fog.density = 0.05; if (sunLight) sunLight.intensity = 0; ambientLight.intensity = 0.08;
             isDaytime = false; hasEnteredHouse = false; hasTurnedOnLight = false; hasScared = false; morningTextTriggered = false; currentCycle++; 
             if (currentCycle === 2) { houseGroup.visible = false; hideRabbitHand(); }
-            switchBtn.userData.isOn = false; switchBtn.material.color.setHex(0xaaaaaa); switchBtn.material.emissive.setHex(0x0055ff); houseLight.intensity = 0;
+            switchBtn.userData.isOn = false; switchBtn.material.color.setHex(0x888888); switchBtn.material.emissive.setHex(0x0055ff); houseLight.intensity = 0;
             doorMesh.userData.isOpen = false; doorPivot.rotation.y = 0; camera.position.set(0, 2, 45); pitch = 0; yaw = 0; camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
             uiElems.fade.style.opacity = 0; uiElems.fade.style.pointerEvents = 'none'; setTimeout(() => { isFrozen = false; updateObjective("Go home"); }, 3000);
         }
@@ -1175,13 +1323,16 @@
             rabbitGroup.position.copy(camera.position).add(dir.multiplyScalar(dist)).add(downVec.multiplyScalar(1.1 * SCALE)); rabbitGroup.quaternion.copy(camera.quaternion); finalScareBasePos.copy(rabbitGroup.position);
             rabbitLight.position.set(0, 1.5, 1.5); rabbitLight.intensity = 50; document.body.classList.add('shaking'); playContinuousJumpscare();
 
+            if (sfx.bad_ending) { sfx.bad_ending.volume = masterVolume; sfx.bad_ending.currentTime = 0; sfx.bad_ending.play().catch(()=>{}); }
+
             setTimeout(() => {
                 isFinalJumpscare = false; isWhiteForest = true; document.body.classList.remove('shaking'); if (sfx.jumpscare_final) sfx.jumpscare_final.pause();
                 scene.background.setHex(0xffffff); scene.fog.color.setHex(0xffffff); scene.fog.density = 0.01; ambientLight.intensity = 1.5;
                 if(!sunLight) { sunLight = new THREE.DirectionalLight(0xffffff, 1.0); scene.add(sunLight); } sunLight.intensity = 1.0; sunLight.position.set(10, 20, 10);
-                trunkInst.visible = false; branchInst1.visible = false; branchInst2.visible = false; leavesInst.visible = false; houseGroup.visible = false; path.visible = false; floor.material.color.setHex(0xeeeeee);
+                trunkInst.visible = false; branchInst1.visible = false; branchInst2.visible = false; leavesInst.visible = false; houseGroup.visible = false; path.visible = false; 
+                floor.material.map = null; floor.material.color.setHex(0xeeeeee);
+                grassInst.visible = false; flowerInst.visible = false; bushInst.visible = false;
                 rabbitGroup.position.y = -10; rabbitLight.intensity = 0; createWhiteForestRabbits();
-                if (sfx.white_forest) { sfx.white_forest.volume = masterVolume; sfx.white_forest.play().catch(()=>{}); }
                 uiElems.fade.style.opacity = 0; isFrozen = false; showSubtitle("Where... am I?", 4000); updateObjective("KiLl YouR SeLff?");
             }, 1000); 
         }
@@ -1212,7 +1363,6 @@
                     if (t >= 1) { rHeadGroup.rotation.y = 0; menuRabbitAnimState = 0; menuRabbitTimer = Math.random() * 3 + 2; }
                 } else { rHeadGroup.rotation.z = THREE.MathUtils.lerp(rHeadGroup.rotation.z, 0, 5 * delta); }
                 rabbitLight.intensity = 1.5 + Math.random() * 0.8; const time = clock.elapsedTime; 
-                // Camera menu look
                 camera.position.x = Math.sin(time) * 0.5; camera.position.y = 2.5 + Math.sin(time * 1.5) * 0.15; camera.lookAt(0, 1.0, 38);
                 renderer.render(scene, camera); return; 
             }
@@ -1259,12 +1409,10 @@
                 whiteForestTimer += delta;
                 if (whiteForestTimer > 30.0 && uiElems.fade.style.opacity === '0') {
                     isFrozen = true; uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; uiElems.fade.style.transition = "opacity 3s ease-in-out, background-color 3s"; uiElems.fade.style.backgroundColor = 'rgba(0, 0, 0, 1)';
-                    if (sfx.white_forest) sfx.white_forest.pause();
-                    if (sfx.bad_ending) { sfx.bad_ending.volume = masterVolume; sfx.bad_ending.currentTime = 0; sfx.bad_ending.play().catch(()=>{}); }
                     setTimeout(() => {
                         uiElems.fade.innerHTML = `
                             <div class="ending-summary">
-                                <span style="color:#ff0000; font-size:4rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 20px #ff0000; font-weight:bold; animation: fast-flicker 0.1s infinite;">BAD ENDING</span>
+                                <span style="color:#ff0000; font-size:4rem; margin-bottom: 20px; font-family: 'Caveat', cursive; text-shadow: 0 0 20px #ff0000; font-weight:bold; animation: gentle-flicker 2s infinite;">BAD ENDING</span>
                                 <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace;">Your mind belongs to The rabbits!</span>
                                 <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #f00; border: 4px solid #f00; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
                             </div>`;
@@ -1308,6 +1456,10 @@
                 if (isMoving) {
                     const euler = new THREE.Euler(0, yaw, 0, 'YXZ'); const moveVec = new THREE.Vector3(dir.x, 0, -dir.z).applyEuler(euler).normalize().multiplyScalar(moveSpeed * delta);
                     camera.position.x += moveVec.x; camera.position.z += moveVec.z;
+
+                    headBobTimer += delta * 12;
+                    camera.position.y = 2.5 + Math.sin(headBobTimer) * 0.08;
+
                     const inHouseCurrent = (currentCycle !== 2 && camera.position.z < -37 && Math.abs(camera.position.x) < 8); const activeStep = inHouseCurrent ? sfx.house_steps : sfx.path_steps; const inactiveStep = inHouseCurrent ? sfx.path_steps : sfx.house_steps;
                     if (!inactiveStep.paused) { inactiveStep.pause(); inactiveStep.currentTime = 0; }
                     if (activeStep.paused || activeStep.ended) { activeStep.volume = masterVolume; activeStep.play().catch(e => console.log("Missing step audio")); }
@@ -1322,12 +1474,12 @@
                 } else {
                     if (sfx.house_steps && !sfx.house_steps.paused) { sfx.house_steps.pause(); sfx.house_steps.currentTime = 0; }
                     if (sfx.path_steps && !sfx.path_steps.paused) { sfx.path_steps.pause(); sfx.path_steps.currentTime = 0; }
+                    if (!isWakingUp) camera.position.y = 2.5;
                 }
 
                 if (isNightmare && nightmareDoorOpened && !hasSeenBloodInNightmare && camera.position.z > -37.0) { hasSeenBloodInNightmare = true; showSubtitle("blood?", 2500); }
                 if (isNightmare && nightmareDoorOpened && camera.position.z > -15 && !isNightmareChase) { triggerNightmareChaseSequence(); }
                 if (isAmbientPlaying) { const targetVol = ((camera.position.z < -37 && Math.abs(camera.position.x) < 8) && currentCycle !== 2) ? masterVolume * 0.1 : masterVolume; sfx.ambient_bg.volume += (targetVol - sfx.ambient_bg.volume) * 0.05; }
-                if (!isWakingUp) camera.position.y = 2.5; 
                 
                 if (currentCycle !== 2 && camera.position.z > -36 && !isWhiteForest) { 
                     let isOffPath = false; if (camera.position.x > 4.5) { camera.position.x = 4.5; isOffPath = true; } else if (camera.position.x < -4.5) { camera.position.x = -4.5; isOffPath = true; }
