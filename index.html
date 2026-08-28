@@ -949,7 +949,7 @@
             rabbitGroup.position.set(0, -10, 0); rabbitGroup.scale.set(0.6, 0.6, 0.6);
             
             setTimeout(() => { const inst = document.getElementById('instructions'); if (inst) inst.style.opacity = '0'; }, 10000);
-            setTimeout(async () => { await showSubtitle("What a hard day of work, I should go home!", 3000); updateObjective("Go home"); showSubtitle("My woodenhouse is at the end of this path", 3000); }, 1000);
+            setTimeout(async () => { await showSubtitle("What a hard working day! I should go home now!", 3000); updateObjective("Go home"); showSubtitle("My woodenhouse is at the end of this path", 3000); }, 1000);
         });
 
         container.addEventListener('click', () => { if (uiElems.main.classList.contains('hidden') && uiElems.pause.classList.contains('hidden') && uiElems.settings.classList.contains('hidden') && uiElems.credit.classList.contains('hidden') && uiElems.donate.classList.contains('hidden') && !isFrozen && !isFinalJumpscare) if (document.pointerLockElement !== document.body) document.body.requestPointerLock(); });
@@ -1018,7 +1018,7 @@
             
             setTimeout(async () => { 
                 isFrozen = false;
-                await showSubtitle("Yawn... That was a good sleep.", 3000);
+                await showSubtitle("Yawnn... That was a good sleep!", 3000);
                 showSubtitle("I'm bored, let's watch TV!", 4000);
                 updateObjective("watch TV");
             }, 3000); 
@@ -1129,7 +1129,7 @@
                         if (currentCycle === 1 && !isDaytime) showSubtitle("I'm tired, better get some sleep!", 0);
                     }
                     else if (type === 'bed') {
-                        if (isNightmare) { showSubtitle("I can't sleep with that loud knocking!", 3000); return; }
+                        if (isNightmare) { showSubtitle("I can't sleep right now", 3000); return; }
 
                         if (isDaytime && currentCycle === 1 && !isAfternoon) { 
                             if (!isFrozen) { 
@@ -1316,7 +1316,7 @@
                         finalCycleWalkTime += delta; 
                         if (finalCycleWalkTime > 1.5 && !finalCycleFlags[0]) { showSubtitle("I've finally done killing those rabbit!", 4000); showRabbitHand(); finalCycleFlags[0] = true; }
                         if (finalCycleWalkTime > 12 && !finalCycleFlags[1]) { showSubtitle("Everyday is just a repeat cycle, I'm feel like a loser!", 4000); finalCycleFlags[1] = true; }
-                        if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) { showSubtitle("Wait WTF where is my house and why is the path so fuckin long???", 4000); finalCycleFlags[2] = true; }
+                        if (finalCycleWalkTime > 25 && !finalCycleFlags[2]) { showSubtitle("Hmmm, weird, I feels like the road is longer than usual?", 4000); finalCycleFlags[2] = true; }
                         if (finalCycleWalkTime > 40 && !finalCycleFlags[3]) { completeObjective(); finalCycleFlags[3] = true; triggerFinalJumpscare(); }
                     }
                 } else {
