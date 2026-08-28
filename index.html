@@ -27,7 +27,6 @@
             z-index: 1;
         }
 
-        /* Streaming Chunk: PS1 Pixelated Canvas Filter */
         canvas {
             width: 100% !important;
             height: 100% !important;
@@ -198,7 +197,6 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
-        /* Streaming Chunk: Styling the UI Elements */
         #main-menu button, #pause-menu button, #settings-menu button, #credit-menu button, #donate-menu button, #sleep-prompt button {
             font-family: 'Caveat', cursive;
             text-transform: none;
@@ -374,7 +372,6 @@
         }
         .shaking { animation: shake 0.1s infinite; }
 
-        /* Streaming Chunk: Defining News Broadcast CSS */
         .news-broadcast-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, #1a2a42 0%, #050a11 100%);
@@ -475,7 +472,6 @@
     
     <canvas id="eye-canvas"></canvas>
 
-    <!-- Streaming Chunk: Setting up HTML DOM structure -->
     <div id="hud" class="hidden">
         <button id="btn-ingame-menu">
             ☰
@@ -579,7 +575,6 @@
         </div>
     </div>
 
-    <!-- Streaming Chunk: Initializing JavaScript logic -->
     <script>
         const eyeCanvas = document.getElementById('eye-canvas');
         const eyeCtx = eyeCanvas.getContext('2d');
@@ -681,7 +676,6 @@
             document.body.requestPointerLock();
         });
 
-        // Streaming Chunk: Audio System Initialization
         const volSlider = document.getElementById('vol-slider'); const fovSlider = document.getElementById('fov-slider'); let masterVolume = 1.0;
         const sfx = {
             path_steps: new Audio('musics/path_steps.mp3'), house_steps: new Audio('musics/house_steps.mp3'),
@@ -779,7 +773,6 @@
         }
         function startAmbientSound() { if (!audioCtx || isAmbientPlaying) return; isAmbientPlaying = true; if (sfx.ambient_bg && !isNightmare) { sfx.ambient_bg.volume = masterVolume; sfx.ambient_bg.play().catch(e => console.log("Missing ambient")); } }
 
-        // Streaming Chunk: Three.js Setup & Flashlight Setup
         const container = document.getElementById('game-container');
         const scene = new THREE.Scene(); scene.background = new THREE.Color(0x060708); scene.fog = new THREE.FogExp2(0x060708, 0.05); 
         fovSlider.addEventListener('input', (e) => { if (camera) { camera.fov = parseInt(e.target.value); camera.updateProjectionMatrix(); } });
@@ -816,7 +809,6 @@
             return tex;
         }
 
-        // Streaming Chunk: Generating Procedural Pixelated Textures
         const woodWallTex = createPixelTexture(64, 64, (ctx, w, h) => {
             ctx.fillStyle = '#3a2415'; ctx.fillRect(0, 0, w, h);
             for(let i = 0; i < 200; i++) { ctx.fillStyle = '#000000'; ctx.globalAlpha = Math.random() * 0.2; ctx.fillRect(0, Math.random() * h, w, Math.random() * 2 + 1); }
@@ -881,7 +873,6 @@
             ctx.fillRect(6, 4, 4, 4); ctx.fillRect(5, 5, 2, 2); ctx.fillRect(9, 5, 2, 2);
         });
 
-        // Streaming Chunk: Generating Environment Meshes
         const floorGeo = new THREE.PlaneGeometry(300, 3500); const floorMat = new THREE.MeshPhongMaterial({ map: groundTex, shininess: 0 }); const floor = new THREE.Mesh(floorGeo, floorMat); floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -300); scene.add(floor);
         const pathGeo = new THREE.PlaneGeometry(5, 3500); const pathMat = new THREE.MeshPhongMaterial({ map: dirtPathTex, shininess: 0 }); const path = new THREE.Mesh(pathGeo, pathMat); path.rotation.x = -Math.PI / 2; path.position.set(0, 0.02, -300); scene.add(path);
 
@@ -970,7 +961,6 @@
         for(let i = 0; i < rainCount; i++) { rainPositions[i*3] = (Math.random() - 0.5) * 80; rainPositions[i*3+1] = Math.random() * 40; rainPositions[i*3+2] = (Math.random() - 0.5) * 800 - 300; }
         rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3)); const rainMat = new THREE.PointsMaterial({ color: 0x888888, size: 0.05, transparent: true, opacity: 0.5 }); const rainDrop = new THREE.Points(rainGeo, rainMat); rainDrop.visible = false; scene.add(rainDrop);
 
-        // Streaming Chunk: Generating the House and Interiors
         const bloodGroup = new THREE.Group(); scene.add(bloodGroup);
         const houseGroup = new THREE.Group(); houseGroup.position.set(0, 0, -45); scene.add(houseGroup); const interactables = []; 
         const houseLight = new THREE.PointLight(0xffddaa, 0, 20); houseLight.position.set(0, 5, 0); houseGroup.add(houseLight);
@@ -1081,7 +1071,6 @@
         const switchMat = new THREE.MeshLambertMaterial({ color: 0x888888, emissive: 0x0055ff, emissiveIntensity: 1 });
         const switchBtn = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.5, 0.1), switchMat); switchBtn.position.set(2.5, 4, 7.4); switchBtn.userData = { type: 'switch', isOn: false }; houseGroup.add(switchBtn); interactables.push(switchBtn);
 
-        // Streaming Chunk: Generating the Rabbits
         const roadRabbitGroup = new THREE.Group(); const roadRMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
         const rBody2 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.5, 0.9), roadRMat); rBody2.position.y = 0.25; roadRabbitGroup.add(rBody2);
         const rHead2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), roadRMat); rHead2.position.set(0, 0.55, 0.35); roadRabbitGroup.add(rHead2);
@@ -1113,8 +1102,7 @@
             }
         }
 
-        // Streaming Chunk: Game Interaction Logic
-        let controlsEnabled = false; let isFrozen = false; const moveSpeed = 6; let keys = { w: false, a: false, s: false, d: false }; let pitch = 0; let yaw = 0;
+        let controlsEnabled = false; let isFrozen = false; const moveSpeed = 4.8; let keys = { w: false, a: false, s: false, d: false }; let pitch = 0; let yaw = 0;
         let headBobTimer = 0;
         let typingInterval; let hideTimeout; const TYPE_SPEED = 40; 
         
@@ -1216,7 +1204,6 @@
             }, 3000); 
         }
 
-        // Streaming Chunk: Ending Logic & Interactions
         function triggerHappyEnding() {
             isFrozen = true; uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; uiElems.fade.style.transition = "opacity 2s ease-in-out"; uiElems.fade.style.backgroundColor = '#000';
             if (isAmbientPlaying && sfx.ambient_bg) sfx.ambient_bg.pause();
@@ -1353,7 +1340,6 @@
             }
         });
 
-        // Streaming Chunk: Jumpscare & Game Loop Animations
         function triggerJumpscare() {
             hasScared = true; isFrozen = true; if (roadRabbitGroup) roadRabbitGroup.visible = false; cameraBasePos.copy(camera.position);
             const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); const downVec = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
