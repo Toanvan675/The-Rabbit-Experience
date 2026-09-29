@@ -197,7 +197,7 @@
             font-family: 'Courier New', Courier, monospace;
         }
 
-        #main-menu button, #pause-menu button, #settings-menu button, #credit-menu button, #sleep-prompt button, #btn-quit {
+        #main-menu button, #pause-menu button, #settings-menu button, #credit-menu button, #achievement-menu button, #sleep-prompt button, #btn-quit {
             font-family: 'Caveat', cursive;
             text-transform: none;
             color: #990000;
@@ -210,7 +210,7 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        #main-menu button:hover, #pause-menu button:hover, #settings-menu button:hover, #credit-menu button:hover, #sleep-prompt button:hover, #btn-quit:hover {
+        #main-menu button:hover, #pause-menu button:hover, #settings-menu button:hover, #credit-menu button:hover, #achievement-menu button:hover, #sleep-prompt button:hover, #btn-quit:hover {
             color: #fff;
             text-shadow: 0 0 15px #f00, 0 0 30px #f00;
             transform: scale(1.15);
@@ -582,6 +582,13 @@
         #main-menu .ending-indicators { position: static; inset: auto; transform: none; display: flex; justify-content: center; gap: clamp(10px, 2vw, 22px); margin-top: clamp(12px, 3vh, 32px); }
         #main-menu .indicator { width: clamp(44px, min(13vw, 19vh), 170px); flex: 0 0 auto; }
         #main-menu .indicator .ind-label { font-size: clamp(0.7rem, min(2.4vw, 3.6vh), 2.2rem); }
+        #achievement-menu { overflow-y: auto; }
+        #achievement-menu .menu-bg { position: fixed; }
+        #achievement-menu .ach-title { position: relative; z-index: 2; font-family: 'Caveat', cursive; font-size: clamp(2rem, 8vh, 4.5rem); color: #cc0000; margin: 0 0 clamp(12px, 4vh, 36px); }
+        #achievement-menu .ending-indicators { position: relative; inset: auto; transform: none; display: flex; justify-content: center; gap: clamp(10px, 2vw, 22px); margin: 0 0 clamp(12px, 3vh, 30px); }
+        #achievement-menu .indicator { width: clamp(90px, min(30vw, 34vh), 240px); flex: 0 0 auto; }
+        #achievement-menu .indicator .ind-label { font-size: clamp(1rem, min(4vw, 5vh), 2.4rem); }
+        #achievement-menu .btn-back { position: relative; z-index: 2; font-size: clamp(1.4rem, 6vh, 3.5rem); }
     </style>
 </head>
 <body>
@@ -645,11 +652,47 @@
         <div class="menu-btns-vertical" style="position: relative; z-index: 2;">
             <button id="btn-continue" class="hidden">Continue</button>
             <button id="btn-play">Play</button>
+            <button id="btn-achievements">Ending</button>
             <button id="btn-credit">Credits</button>
             <button id="btn-quit">Quit</button>
         </div>
         
-        <!-- Ending Achievements -->
+        <div id="storage-warning" class="hidden">Your browser blocks saved data, so progress only survives F5 in this tab.</div>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-menu" class="ui-layer hidden" style="z-index: 15;">
+        <div class="menu-bg"></div>
+        <h2 style="font-family: 'Caveat', cursive; font-size: 6rem; color: #cc0000; margin-bottom: 30px; animation: flicker 4s infinite;">Paused</h2>
+        <div class="menu-btns-vertical">
+            <button id="btn-resume">Continue</button>
+            <button id="btn-settings">Settings</button>
+            <button id="btn-quit-main">Main Menu</button>
+        </div>
+    </div>
+
+    <!-- Settings Menu -->
+    <div id="settings-menu" class="ui-layer hidden" style="z-index: 16;">
+        <div class="menu-bg"></div>
+        <div class="info-panel">
+            <h2 style="font-family: 'Caveat', cursive; font-size: 3rem; color: #cc0000; font-family: 'Courier New', Courier, monospace;">Settings</h2>
+            <div class="setting-row">
+                <label>Volume:</label>
+                <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="1">
+            </div>
+            <div class="setting-row">
+                <label>FOV:</label>
+                <input type="range" id="fov-slider" min="50" max="100" step="5" value="65">
+            </div>
+        </div>
+        <button id="btn-settings-back" class="btn-back">Back</button>
+    </div>
+
+    <!-- Achievements Menu -->
+    <div id="achievement-menu" class="ui-layer hidden">
+        <div class="menu-bg"></div>
+        <h2 class="ach-title">Ending</h2>
         <div class="ending-indicators">
             <div class="indicator" id="ind-happy" title="???">
                 <svg class="ind-art" viewBox="0 100 200 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -714,36 +757,7 @@
                 <div class="ind-label">BAD<br>ENDING</div>
             </div>
         </div>
-        <div id="storage-warning" class="hidden">Your browser blocks saved data, so progress only survives F5 in this tab.</div>
-        </div>
-    </div>
-
-    <!-- Pause Menu -->
-    <div id="pause-menu" class="ui-layer hidden" style="z-index: 15;">
-        <div class="menu-bg"></div>
-        <h2 style="font-family: 'Caveat', cursive; font-size: 6rem; color: #cc0000; margin-bottom: 30px; animation: flicker 4s infinite;">Paused</h2>
-        <div class="menu-btns-vertical">
-            <button id="btn-resume">Continue</button>
-            <button id="btn-settings">Settings</button>
-            <button id="btn-quit-main">Main Menu</button>
-        </div>
-    </div>
-
-    <!-- Settings Menu -->
-    <div id="settings-menu" class="ui-layer hidden" style="z-index: 16;">
-        <div class="menu-bg"></div>
-        <div class="info-panel">
-            <h2 style="font-family: 'Caveat', cursive; font-size: 3rem; color: #cc0000; font-family: 'Courier New', Courier, monospace;">Settings</h2>
-            <div class="setting-row">
-                <label>Volume:</label>
-                <input type="range" id="vol-slider" min="0" max="1" step="0.1" value="1">
-            </div>
-            <div class="setting-row">
-                <label>FOV:</label>
-                <input type="range" id="fov-slider" min="50" max="100" step="5" value="65">
-            </div>
-        </div>
-        <button id="btn-settings-back" class="btn-back">Back</button>
+        <button class="btn-back">Back</button>
     </div>
 
     <!-- Credit Menu -->
@@ -751,7 +765,7 @@
         <div class="menu-bg"></div>
         <div class="info-panel">
             <h2 style="font-family: 'Caveat', cursive; font-size: 3rem; color: #cc0000; font-family: 'Courier New', Courier, monospace;">Credits</h2>
-            <p style="font-size: 1.2rem; color: #aaa; font-family: 'Courier New', Courier, monospace;">"Toàn đẹp trai" made this shit</p>
+            <p style="font-size: 1.2rem; color: #aaa; font-family: 'Courier New', Courier, monospace; line-height: 1.6;">My name is Toàn. This is my first game. It has been lingering in my mind for a long time because of a nightmare I once experienced. And now, I want to share that experience with you.<br><br>Have fun!</p>
         </div>
         <button class="btn-back">Back</button>
     </div>
@@ -938,8 +952,9 @@
             window.close(); // Automatically close the browser tab/window
         });
 
+        document.getElementById('btn-achievements').addEventListener('click', () => { uiElems.main.classList.add('hidden'); document.getElementById('achievement-menu').classList.remove('hidden'); });
         document.querySelectorAll('.btn-back').forEach(btn => btn.addEventListener('click', () => {
-            uiElems.credit.classList.add('hidden'); uiElems.settings.classList.add('hidden');
+            document.getElementById('achievement-menu').classList.add('hidden'); uiElems.credit.classList.add('hidden'); uiElems.settings.classList.add('hidden');
             if (controlsEnabled) uiElems.pause.classList.remove('hidden'); else uiElems.main.classList.remove('hidden');
         }));
         uiElems.ingameMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); document.exitPointerLock(); uiElems.pause.classList.remove('hidden'); uiElems.ingameMenuBtn.classList.add('hidden'); });
@@ -1745,7 +1760,7 @@
             const stalkMat = new THREE.MeshLambertMaterial({ color: 0xc9e6c2, emissive: 0x1d4a2a });
             birdScene.userData.capMat = capMat;
             function mushroom(x, y, z, h, r, tx, tz) {
-                const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.set(tx, 0, tz);
+                const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.set(tx, 0, tz); g.scale.setScalar(0.5);
                 const stalkGeo = new THREE.CylinderGeometry(r * 0.16, r * 0.24, h, 6); stalkGeo.translate(0, h / 2, 0); g.add(new THREE.Mesh(stalkGeo, stalkMat));
                 const cap = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), capMat); cap.position.y = h; cap.scale.y = 0.7; g.add(cap);
                 const gill = new THREE.Mesh(new THREE.CircleGeometry(r * 0.98, 10), gillMat); gill.rotation.x = Math.PI / 2; gill.position.y = h; g.add(gill);
