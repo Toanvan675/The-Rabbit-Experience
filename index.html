@@ -1920,7 +1920,7 @@
 
         function startGame(stage) {
             const fresh = !stage || stage === 'new';
-            initAudio(); playSound('thunder'); startAmbientSound(); 
+            initAudio(); startAmbientSound(); 
             uiElems.main.classList.add('hidden'); uiElems.hud.classList.remove('hidden'); document.body.requestPointerLock();
             if (fresh) showRabbitHand();
             
