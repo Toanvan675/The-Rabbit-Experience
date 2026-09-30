@@ -451,7 +451,7 @@
 
         .news-broadcast-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('thoisu.jpg') no-repeat center center;
+            background: url('images/thoisu.jpg') no-repeat center center;
             background-size: cover;
             background-color: #050a11;
             font-family: 'Arial', sans-serif; z-index: 10;
@@ -620,12 +620,12 @@
         <div id="crosshair"></div>
         <div id="hover-text" class="hidden"></div>
         <div id="flashlight-ui">
-            <img src="flashlight.png" onerror="this.onerror=null; this.src='https://placehold.co/50x50/333/fff?text=FL';" alt="Flashlight">
+            <img src="images/flashlight.png" onerror="this.onerror=null; this.src='https://placehold.co/50x50/333/fff?text=FL';" alt="Flashlight">
             <div class="key-hint">F</div>
         </div>
         <div id="subtitle"></div>
         <div id="rabbit-hand-overlay">
-            <img src="Hand.jpg" onerror="this.onerror=null; this.src='https://placehold.co/400x300/111/f00?text=Hand.jpg+Missing';" alt="Holding Rabbit">
+            <img src="images/Hand.jpg" onerror="this.onerror=null; this.src='https://placehold.co/400x300/111/f00?text=Hand.jpg+Missing';" alt="Holding Rabbit">
         </div>
         <div id="objective-ui">Objective: Go home</div>
         <div id="instructions">
@@ -983,7 +983,8 @@
             jumpscare_final: new Audio('musics/jumpscare_final.mp3'), rain: new Audio('musics/rain.mp3'),
             knock: new Audio('musics/knock.mp3'), music_3am: new Audio('musics/3AM.mp3'), white_forest: new Audio('musics/white_forest.mp3'),
             happy_ending: new Audio('musics/happy_ending.mp3'), bad_ending: new Audio('musics/bad_ending.mp3'),
-            congrats: new Audio('musics/congrats.mp3')
+            congrats: new Audio('musics/congrats.mp3'),
+            thoisu1: new Audio('musics/thoisu1.mp3')
         };
         sfx.ambient_bg.loop = true; sfx.jumpscare_final.loop = true; sfx.rain.loop = true; sfx.knock.loop = true; sfx.music_3am.loop = true; sfx.white_forest.loop = true;
         sfx.happy_ending.loop = true; sfx.bad_ending.loop = true;
@@ -996,6 +997,7 @@
             if (sfx.knock) sfx.knock.volume = masterVolume; if (sfx.music_3am) sfx.music_3am.volume = masterVolume; if (sfx.white_forest) sfx.white_forest.volume = masterVolume;
             if (sfx.happy_ending) sfx.happy_ending.volume = masterVolume; if (sfx.bad_ending) sfx.bad_ending.volume = masterVolume;
             if (sfx.congrats) sfx.congrats.volume = masterVolume;
+            if (sfx.thoisu1) sfx.thoisu1.volume = masterVolume;
         });
 
         let audioCtx; let masterGain; let noiseBuffer; let isAmbientPlaying = false;
@@ -2063,7 +2065,7 @@
         function triggerHappyEnding() {
             isFrozen = true; uiElems.fade.style.pointerEvents = 'auto'; uiElems.fade.style.opacity = 1; uiElems.fade.style.transition = "opacity 2s ease-in-out"; uiElems.fade.style.backgroundColor = '#000';
             if (isAmbientPlaying && sfx.ambient_bg) sfx.ambient_bg.pause();
-            if (sfx.happy_ending) { sfx.happy_ending.volume = masterVolume; sfx.happy_ending.currentTime = 0; sfx.happy_ending.play().catch(()=>{}); }
+            if (sfx.thoisu1) { sfx.thoisu1.volume = masterVolume; sfx.thoisu1.currentTime = 0; sfx.thoisu1.play().catch(()=>{}); }
             
             // Set Happy Ending State to True
             Store.set('happy', true);
@@ -2096,6 +2098,8 @@
                         <span style="color:#fff; font-size:2rem; margin-bottom: 40px; font-family: 'Courier New', monospace; text-align: center;">You chose to sleep and not interact with rabbits.<br>You survived the the apocalypse!</span>
                         <button id="btn-final-menu" style="font-size:2.5rem; padding:15px 40px; font-family: 'Courier New', monospace; background: rgba(0,0,0,0.8); color: #0f0; border: 4px solid #0f0; cursor: pointer; transition: all 0.3s; font-weight:bold;">MAIN MENU</button>
                     `;
+                    if (sfx.thoisu1) { sfx.thoisu1.pause(); sfx.thoisu1.currentTime = 0; }
+                    if (sfx.happy_ending) { sfx.happy_ending.volume = masterVolume; sfx.happy_ending.currentTime = 0; sfx.happy_ending.play().catch(()=>{}); }
                     uiElems.fade.appendChild(summaryDiv);
                     
                     void summaryDiv.offsetWidth;
